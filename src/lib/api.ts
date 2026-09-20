@@ -1,5 +1,9 @@
 import Constants from "expo-constants";
-import { Role, UserStatus } from "@repo/types";
+import {
+  Role,
+  UserStatus,
+  type HqDashboardResponse,
+} from "@repo/types";
 import {
   clearSession,
   getAccessToken,
@@ -237,13 +241,21 @@ async function rawRequest<T>(
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const res = await fetch(`${API_URL}${path}`, { ...options, headers });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new ApiError(formatApiErrorMessage(body, res.statusText), res.status);
+  try {
+    const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new ApiError(formatApiErrorMessage(body, res.statusText), res.status);
+    }
+    if (res.status === 204) return undefined as T;
+    return res.json() as Promise<T>;
+  } catch (err) {
+    if (err instanceof ApiError) throw err;
+    throw new ApiError(
+      "Can't reach the API from this browser. Sign in on Expo Go on your phone, or allow http://localhost:8081 on the API (CORS).",
+      0,
+    );
   }
-  if (res.status === 204) return undefined as T;
-  return res.json() as Promise<T>;
 }
 
 async function request<T>(
@@ -295,6 +307,21 @@ export const api = {
     }),
 
   getMe: () => request<UserRecord>("/users/me"),
+
+  getHqDashboard: (
+    weekOf: string,
+    weeks = 6,
+    signal?: AbortSignal,
+  ) => {
+    const params = new URLSearchParams({
+      weekOf,
+      weeks: String(weeks),
+    });
+    return request<HqDashboardResponse>(
+      `/dashboard/hq?${params.toString()}`,
+      { signal },
+    );
+  },
 
   listPastors: (filters: PastorFilters = {}) => {
     const params = new URLSearchParams();

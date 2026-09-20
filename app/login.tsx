@@ -1,24 +1,29 @@
 import { useState } from "react";
 import {
-  ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 import { useRouter } from "expo-router";
 import { ApiError } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/session";
-import { colors, radius, spacing } from "@/src/theme/tokens";
+import { Field, PrimaryButton } from "@/src/components/ui";
+import { colors, spacing, typography } from "@/src/theme/tokens";
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -26,7 +31,7 @@ export default function LoginScreen() {
     setError(null);
     setSubmitting(true);
     try {
-      await signIn(email, password);
+      await signIn(email.trim(), password);
       router.replace("/");
     } catch (err) {
       const message =
@@ -39,136 +44,170 @@ export default function LoginScreen() {
     }
   }
 
+  const canSubmit = email.trim().length > 3 && password.length >= 8 && !submitting;
+
   return (
-    <KeyboardAvoidingView
-      style={styles.root}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
-      <View style={styles.hero}>
-        <Text style={styles.brand}>JNLOP</Text>
-        <Text style={styles.tagline}>Jubilee Nation Leadership & Operations</Text>
-      </View>
+    <View style={styles.root}>
+      <StatusBar style="light" />
+      <View style={styles.orbTop} />
+      <View style={styles.orbMid} />
+      <View style={styles.orbGold} />
 
-      <View style={styles.card}>
-        <Text style={styles.title}>Sign in</Text>
-        <Text style={styles.subtitle}>HQ Admin and Lead Pastor access</Text>
-
-        <Text style={styles.label}>Email</Text>
-        <TextInput
-          autoCapitalize="none"
-          autoCorrect={false}
-          keyboardType="email-address"
-          placeholder="you@jnic.org"
-          placeholderTextColor={colors.textMuted}
-          style={styles.input}
-          value={email}
-          onChangeText={setEmail}
-        />
-
-        <Text style={styles.label}>Password</Text>
-        <TextInput
-          secureTextEntry
-          placeholder="••••••••"
-          placeholderTextColor={colors.textMuted}
-          style={styles.input}
-          value={password}
-          onChangeText={setPassword}
-          onSubmitEditing={onSubmit}
-        />
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-        <Pressable
-          style={[styles.button, submitting && styles.buttonDisabled]}
-          onPress={onSubmit}
-          disabled={submitting || !email || password.length < 8}
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[
+            styles.scroll,
+            {
+              paddingTop: insets.top + spacing.xl,
+              paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing.md,
+            },
+          ]}
+          showsVerticalScrollIndicator={false}
         >
-          {submitting ? (
-            <ActivityIndicator color={colors.goldForeground} />
-          ) : (
-            <Text style={styles.buttonText}>Sign in</Text>
-          )}
-        </Pressable>
-      </View>
-    </KeyboardAvoidingView>
+          <View style={styles.brandBlock}>
+            <Image
+              source={require("../assets/images/jnic-logo-transparent.png")}
+              accessibilityLabel="Jubilee Nation International Churches"
+              style={styles.logo}
+              resizeMode="contain"
+            />
+            <Text style={styles.brand}>JNLOP</Text>
+          </View>
+
+          <View style={styles.form}>
+            <Field
+              tone="onNavy"
+              label="Email"
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="email"
+              keyboardType="email-address"
+              textContentType="emailAddress"
+              placeholder="you@jnic.org"
+              value={email}
+              onChangeText={setEmail}
+              returnKeyType="next"
+            />
+
+            <View style={styles.passwordHead}>
+              <Text style={styles.passwordLabel}>Password</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+                accessibilityState={{ expanded: showPassword }}
+                hitSlop={8}
+                onPress={() => setShowPassword((v) => !v)}
+              >
+                <Text style={styles.showPasswordText}>
+                  {showPassword ? "Hide" : "Show"}
+                </Text>
+              </Pressable>
+            </View>
+            <Field
+              tone="onNavy"
+              label=""
+              secureTextEntry={!showPassword}
+              autoComplete="password"
+              textContentType="password"
+              placeholder="Password"
+              value={password}
+              onChangeText={setPassword}
+              onSubmitEditing={() => {
+                if (canSubmit) void onSubmit();
+              }}
+              returnKeyType="go"
+            />
+
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+
+            <PrimaryButton
+              label="Sign in"
+              onPress={() => void onSubmit()}
+              loading={submitting}
+              disabled={!canSubmit}
+            />
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.bgBase,
-    justifyContent: "center",
-    padding: spacing.lg,
+    backgroundColor: colors.navyDeep,
   },
-  hero: {
-    marginBottom: spacing.lg,
-    paddingHorizontal: spacing.sm,
+  flex: { flex: 1 },
+  scroll: {
+    flexGrow: 1,
+    paddingHorizontal: spacing.lg,
+    justifyContent: "center",
+  },
+  orbTop: {
+    position: "absolute",
+    top: -80,
+    right: -40,
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: colors.goldGlow,
+  },
+  orbMid: {
+    position: "absolute",
+    top: 120,
+    left: -90,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: colors.navyGlow,
+  },
+  orbGold: {
+    position: "absolute",
+    bottom: "28%",
+    right: -50,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: colors.whiteGlow,
+  },
+  brandBlock: {
+    marginBottom: spacing.xl,
+  },
+  logo: {
+    width: 104,
+    height: 80,
+    marginBottom: spacing.md,
   },
   brand: {
-    fontSize: 36,
-    fontWeight: "700",
-    color: colors.navy,
-    letterSpacing: 1,
+    ...typography.display,
+    color: colors.textOnNavy,
   },
-  tagline: {
-    marginTop: spacing.xs,
-    color: colors.textMuted,
-    fontSize: 14,
+  form: {
+    width: "100%",
   },
-  card: {
-    backgroundColor: colors.bgSurface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
+  passwordHead: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
   },
-  title: {
-    fontSize: 22,
+  passwordLabel: {
+    ...typography.caption,
+    color: colors.textOnNavyMuted,
+  },
+  showPasswordText: {
+    ...typography.footnote,
     fontWeight: "600",
-    color: colors.textPrimary,
-  },
-  subtitle: {
-    marginTop: spacing.xs,
-    marginBottom: spacing.md,
-    color: colors.textMuted,
-    fontSize: 14,
-  },
-  label: {
-    marginTop: spacing.sm,
-    marginBottom: spacing.xs,
-    fontSize: 13,
-    fontWeight: "500",
-    color: colors.textPrimary,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: colors.textPrimary,
-    backgroundColor: colors.bgBase,
+    color: colors.gold,
   },
   error: {
-    marginTop: spacing.md,
+    ...typography.footnote,
     color: colors.error,
-    fontSize: 14,
-  },
-  button: {
-    marginTop: spacing.lg,
-    backgroundColor: colors.gold,
-    borderRadius: radius.md,
-    paddingVertical: 14,
-    alignItems: "center",
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: colors.goldForeground,
-    fontWeight: "600",
-    fontSize: 16,
+    marginBottom: spacing.md,
   },
 });

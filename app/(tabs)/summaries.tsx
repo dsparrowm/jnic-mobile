@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   FlatList,
-  Pressable,
   RefreshControl,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { api, ApiError, type MonthlySummaryRecord } from "@/src/lib/api";
-import { colors, radius, spacing } from "@/src/theme/tokens";
+import { EmptyState } from "@/src/components/ui";
+import { MonthPicker, StatusPill } from "@/src/components/premium/controls";
+import { PremiumHeader } from "@/src/components/premium/screen";
+import { InlineNotice, ScreenSkeleton } from "@/src/components/premium/states";
+import { colors, layout, radius, spacing, typography } from "@/src/theme/tokens";
 
 const MONTH_NAMES = [
   "January",
@@ -61,22 +63,24 @@ export default function SummariesScreen() {
 
   return (
     <View style={styles.root}>
-      <View style={styles.monthRow}>
-        <Pressable onPress={() => shiftMonth(-1)} style={styles.monthBtn}>
-          <Text style={styles.monthBtnText}>‹</Text>
-        </Pressable>
-        <Text style={styles.heading}>
-          {MONTH_NAMES[month - 1]} {year}
-        </Text>
-        <Pressable onPress={() => shiftMonth(1)} style={styles.monthBtn}>
-          <Text style={styles.monthBtnText}>›</Text>
-        </Pressable>
-      </View>
+      <PremiumHeader
+        title="Summaries"
+        subtitle="National monthly rollups"
+        icon="stats-chart"
+        right={<StatusPill label={`${items.length} scopes`} tone="warning" />}
+      />
+      <MonthPicker
+        month={month}
+        year={year}
+        monthNames={MONTH_NAMES}
+        onPrevious={() => shiftMonth(-1)}
+        onNext={() => shiftMonth(1)}
+      />
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <InlineNotice message={error} /> : null}
 
       {loading ? (
-        <ActivityIndicator color={colors.navy} style={{ marginTop: spacing.lg }} />
+        <ScreenSkeleton rows={4} />
       ) : (
         <FlatList
           data={items}
@@ -92,17 +96,32 @@ export default function SummariesScreen() {
             />
           }
           ListEmptyComponent={
-            <Text style={styles.empty}>No summaries for this month.</Text>
+            <EmptyState
+              title="No summaries"
+              body="Nothing rolled up for this month yet."
+            />
           }
           renderItem={({ item }) => (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>
-                {item.scopeName ?? item.scopeType}
+            <View
+              style={[
+                styles.row,
+              ]}
+            >
+              <View style={styles.rowTop}>
+                <Text style={styles.cardTitle}>
+                  {item.scopeName ?? item.scopeType}
+                </Text>
+                <StatusPill
+                  label={item.status.replace(/_/g, " ")}
+                  tone={item.status === "APPROVED" ? "success" : "warning"}
+                />
+              </View>
+              <Text style={styles.cardMeta}>
+                {MONTH_NAMES[item.month - 1]} {item.year} · Updated rollup
               </Text>
-              <Text style={styles.cardMeta}>{item.status}</Text>
             </View>
           )}
-          contentContainerStyle={{ paddingBottom: spacing.xl }}
+          contentContainerStyle={{ paddingVertical: spacing.md, paddingBottom: spacing.xl, gap: spacing.sm }}
         />
       )}
     </View>
@@ -113,37 +132,77 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.bgBase,
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
+    paddingHorizontal: layout.screenPad,
+    paddingTop: spacing.xs,
   },
   monthRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: spacing.md,
-  },
-  heading: { fontSize: 18, fontWeight: "700", color: colors.navy },
-  monthBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
     backgroundColor: colors.bgSurface,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderRadius: radius.lg,
+    padding: spacing.sm,
+  },
+  monthCenter: { alignItems: "center" },
+  monthLabel: {
+    ...typography.title3,
+    color: colors.navy,
+  },
+  yearLabel: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  monthBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.bgSubtle,
     alignItems: "center",
     justifyContent: "center",
   },
-  monthBtnText: { fontSize: 20, color: colors.navy, fontWeight: "600" },
-  card: {
+  monthBtnText: {
+    fontSize: 22,
+    color: colors.navy,
+    fontWeight: "600",
+  },
+  row: {
     backgroundColor: colors.bgSurface,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+  },
+  rowTop: {
+    minHeight: 30,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.sm,
+  },
+  rowFirst: {
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+  },
+  rowLast: {
+    borderBottomLeftRadius: radius.lg,
+    borderBottomRightRadius: radius.lg,
+  },
+  rowDivider: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.borderSubtle,
+  },
+  cardTitle: {
+    ...typography.bodyStrong,
+    color: colors.textPrimary,
+  },
+  cardMeta: {
+    ...typography.footnote,
+    marginTop: 4,
+    color: colors.textMuted,
+  },
+  error: {
+    ...typography.footnote,
+    color: colors.error,
     marginBottom: spacing.sm,
   },
-  cardTitle: { fontWeight: "600", color: colors.textPrimary, fontSize: 16 },
-  cardMeta: { marginTop: 4, color: colors.textMuted, fontSize: 13 },
-  empty: { textAlign: "center", color: colors.textMuted, marginTop: spacing.xl },
-  error: { color: colors.error, marginBottom: spacing.sm },
 });

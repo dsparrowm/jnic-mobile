@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   FlatList,
-  Pressable,
   RefreshControl,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { api, ApiError, type MonthlySummaryRecord } from "@/src/lib/api";
-import { colors, radius, spacing } from "@/src/theme/tokens";
+import { EmptyState, PrimaryButton } from "@/src/components/ui";
+import { MonthPicker, StatusPill } from "@/src/components/premium/controls";
+import { PremiumHeader, SectionHeader } from "@/src/components/premium/screen";
+import { InlineNotice, ScreenSkeleton } from "@/src/components/premium/states";
+import { colors, layout, radius, spacing, typography } from "@/src/theme/tokens";
 
 const MONTH_NAMES = [
   "January",
@@ -99,13 +101,17 @@ export default function ApprovalsScreen() {
 
   return (
     <View style={styles.root}>
-      <Text style={styles.heading}>Approvals</Text>
-      <Text style={styles.sub}>National monthly summaries pending Lead Pastor sign-off</Text>
+      <PremiumHeader
+        title="Approvals"
+        subtitle="National monthly summaries waiting for sign-off"
+        icon="checkmark-done"
+        right={<StatusPill label={`${pending.length} pending`} tone={pending.length ? "warning" : "success"} />}
+      />
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <InlineNotice message={error} /> : null}
 
       {loading ? (
-        <ActivityIndicator color={colors.navy} style={{ marginTop: spacing.lg }} />
+        <ScreenSkeleton rows={4} />
       ) : (
         <FlatList
           data={pending}
@@ -122,58 +128,69 @@ export default function ApprovalsScreen() {
           }
           ListHeaderComponent={
             <View>
-              <Text style={styles.section}>Pending approval</Text>
+              <SectionHeader title="Pending decisions" meta={`${pending.length}`} />
               {pending.length === 0 ? (
-                <Text style={styles.empty}>Nothing waiting for approval.</Text>
+                <View style={styles.emptyWrap}>
+                  <EmptyState
+                    title="All clear"
+                    body="Nothing waiting for approval right now."
+                  />
+                </View>
               ) : null}
             </View>
           }
           renderItem={({ item }) => (
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>
-                {MONTH_NAMES[item.month - 1]} {item.year}
-              </Text>
+              <View style={styles.cardTop}>
+                <Text style={styles.cardTitle}>
+                  {MONTH_NAMES[item.month - 1]} {item.year}
+                </Text>
+                <StatusPill label="Needs sign-off" tone="warning" />
+              </View>
               <Text style={styles.cardMeta}>
-                {item.scopeName ?? item.scopeType} · {item.status}
+                {item.scopeName ?? item.scopeType} summary
               </Text>
-              <Pressable
-                style={[
-                  styles.primaryBtn,
-                  approvingId === item.id && { opacity: 0.6 },
-                ]}
-                disabled={approvingId === item.id}
-                onPress={() => approve(item)}
-              >
-                {approvingId === item.id ? (
-                  <ActivityIndicator color={colors.goldForeground} />
-                ) : (
-                  <Text style={styles.primaryBtnText}>Approve</Text>
-                )}
-              </Pressable>
+              <View style={{ marginTop: spacing.md }}>
+                <PrimaryButton
+                  label="Approve"
+                  loading={approvingId === item.id}
+                  onPress={() => approve(item)}
+                />
+              </View>
             </View>
           )}
           ListFooterComponent={
-            <View style={{ marginTop: spacing.lg }}>
-              <View style={styles.monthRow}>
-                <Pressable onPress={() => shiftMonth(-1)} style={styles.monthBtn}>
-                  <Text style={styles.monthBtnText}>‹</Text>
-                </Pressable>
-                <Text style={styles.section}>
-                  {MONTH_NAMES[month - 1]} {year}
-                </Text>
-                <Pressable onPress={() => shiftMonth(1)} style={styles.monthBtn}>
-                  <Text style={styles.monthBtnText}>›</Text>
-                </Pressable>
-              </View>
+            <View style={styles.history}>
+              <SectionHeader title="Monthly history" />
+              <MonthPicker
+                month={month}
+                year={year}
+                monthNames={MONTH_NAMES}
+                onPrevious={() => shiftMonth(-1)}
+                onNext={() => shiftMonth(1)}
+              />
               {summaries.length === 0 ? (
-                <Text style={styles.empty}>No summaries for this month.</Text>
+                <Text style={styles.emptyLine}>No summaries for this month.</Text>
               ) : (
-                summaries.map((item) => (
-                  <View key={item.id} style={styles.cardMuted}>
-                    <Text style={styles.cardTitle}>
-                      {item.scopeName ?? item.scopeType}
-                    </Text>
-                    <Text style={styles.cardMeta}>{item.status}</Text>
+                summaries.map((item, index) => (
+                  <View
+                    key={item.id}
+                    style={[
+                      styles.mutedRow,
+                      index === 0 && styles.rowFirst,
+                      index === summaries.length - 1 && styles.rowLast,
+                      index !== summaries.length - 1 && styles.rowDivider,
+                    ]}
+                  >
+                    <View style={styles.cardTop}>
+                      <Text style={styles.cardTitle}>
+                        {item.scopeName ?? item.scopeType}
+                      </Text>
+                      <StatusPill
+                        label={item.status.replace(/_/g, " ")}
+                        tone={item.status === "APPROVED" ? "success" : "warning"}
+                      />
+                    </View>
                   </View>
                 ))
               )}
@@ -190,46 +207,68 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.bgBase,
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
+    paddingHorizontal: layout.screenPad,
+    paddingTop: spacing.xs,
   },
-  heading: { fontSize: 22, fontWeight: "700", color: colors.navy },
+  history: {
+    marginTop: spacing.lg,
+    gap: spacing.sm,
+  },
   sub: {
+    ...typography.callout,
     color: colors.textMuted,
-    fontSize: 13,
     marginBottom: spacing.md,
-    marginTop: 2,
   },
   section: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: colors.textPrimary,
+    ...typography.overline,
+    color: colors.textMuted,
     marginBottom: spacing.sm,
+  },
+  cardTop: {
+    minHeight: 30,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.sm,
+  },
+  sectionInline: {
+    ...typography.bodyStrong,
+    color: colors.navy,
   },
   card: {
     backgroundColor: colors.bgSurface,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
     padding: spacing.md,
     marginBottom: spacing.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.goldSoft,
   },
-  cardMuted: {
-    backgroundColor: colors.bgSubtle,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginBottom: spacing.sm,
+  mutedRow: {
+    backgroundColor: colors.bgSurface,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 14,
   },
-  cardTitle: { fontWeight: "600", color: colors.textPrimary, fontSize: 16 },
-  cardMeta: { marginTop: 4, color: colors.textMuted, fontSize: 13 },
-  primaryBtn: {
-    marginTop: spacing.md,
-    backgroundColor: colors.gold,
-    borderRadius: radius.md,
-    paddingVertical: 10,
-    alignItems: "center",
+  rowFirst: {
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
   },
-  primaryBtnText: { color: colors.goldForeground, fontWeight: "600" },
+  rowLast: {
+    borderBottomLeftRadius: radius.lg,
+    borderBottomRightRadius: radius.lg,
+  },
+  rowDivider: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.borderSubtle,
+  },
+  cardTitle: {
+    ...typography.bodyStrong,
+    color: colors.textPrimary,
+  },
+  cardMeta: {
+    ...typography.footnote,
+    marginTop: 4,
+    color: colors.textMuted,
+  },
   monthRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -237,16 +276,27 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   monthBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: colors.bgSurface,
-    borderWidth: 1,
-    borderColor: colors.border,
     alignItems: "center",
     justifyContent: "center",
   },
-  monthBtnText: { fontSize: 20, color: colors.navy, fontWeight: "600" },
-  empty: { color: colors.textMuted, marginBottom: spacing.md },
-  error: { color: colors.error, marginBottom: spacing.sm },
+  monthBtnText: {
+    fontSize: 22,
+    color: colors.navy,
+    fontWeight: "600",
+  },
+  emptyWrap: { marginBottom: spacing.md },
+  emptyLine: {
+    ...typography.footnote,
+    color: colors.textMuted,
+    marginBottom: spacing.md,
+  },
+  error: {
+    ...typography.footnote,
+    color: colors.error,
+    marginBottom: spacing.sm,
+  },
 });

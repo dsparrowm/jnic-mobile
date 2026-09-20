@@ -1,40 +1,44 @@
-import { Link, Stack } from 'expo-router';
-import { StyleSheet } from 'react-native';
-
-import { Text, View } from '@/components/Themed';
+import { StyleSheet, View } from "react-native";
+import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { PrimaryButton } from "@/src/components/ui";
+import { EmptyPanel } from "@/src/components/premium/states";
+import { colors, layout, spacing } from "@/src/theme/tokens";
 
 export default function NotFoundScreen() {
-  return (
-    <>
-      <Stack.Screen options={{ title: 'Oops!' }} />
-      <View style={styles.container}>
-        <Text style={styles.title}>This screen doesn't exist.</Text>
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
 
-        <Link href="/" style={styles.link}>
-          <Text style={styles.linkText}>Go to home screen!</Text>
-        </Link>
-      </View>
-    </>
+  return (
+    <View
+      style={[
+        styles.root,
+        {
+          paddingTop: insets.top + spacing.lg,
+          paddingBottom: insets.bottom + spacing.lg,
+        },
+      ]}
+    >
+      <EmptyPanel
+        icon="compass-outline"
+        title="Page not found"
+        body="This destination is unavailable or may have moved."
+      />
+      <PrimaryButton
+        label="Return home"
+        tone="navy"
+        onPress={() => router.replace("/")}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
-  },
-  linkText: {
-    fontSize: 14,
-    color: '#2e78b7',
+    justifyContent: "center",
+    gap: spacing.md,
+    paddingHorizontal: layout.screenPad,
+    backgroundColor: colors.bgBase,
   },
 });

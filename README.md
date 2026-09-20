@@ -13,41 +13,49 @@ Expo (React Native) companion to [jnic-management](../jnic-management) for **Adm
 ```bash
 cd jnic-mobile
 cp .env.example .env
-# Set EXPO_PUBLIC_API_URL to your Render API URL
+# Set EXPO_PUBLIC_API_URL to your Render API URL (not localhost — phone cannot reach WSL)
 npm install
 ```
 
-### Physical device (EAS QR) — primary
+### Physical device via Expo Go (recommended)
 
-1. Install EAS CLI and log in: `npm i -g eas-cli && eas login`
-2. Link the project: `eas init`
-3. Build a development client:
+No Android Studio or EAS native build required.
+
+1. Install **Expo Go** from the Play Store / App Store on your phone.
+2. Put your deployed API URL in `.env`:
 
 ```bash
-eas build --profile development --platform android
-# and/or
-eas build --profile development --platform ios
+EXPO_PUBLIC_API_URL=https://your-api.onrender.com
 ```
 
-4. On [expo.dev](https://expo.dev), open the build and **scan the install QR** to put the JNLOP dev client on your phone.
-5. Start Metro with tunnel (needed from WSL2):
+3. From WSL, start Metro with **tunnel** (LAN usually fails from WSL2):
 
 ```bash
 npm run start:tunnel
 ```
 
-6. Scan the **Metro QR** inside the installed dev client.
+4. In the terminal, if it says “development build”, press **`s`** to switch to **Expo Go**.
+5. Scan the QR code with Expo Go (Android) or the Camera app (iOS).
 
-### EAS Simulator
+If the QR fails, open the `exp://…` URL shown in the terminal inside Expo Go.
 
-Deferred (waitlist). When you have access, see [EAS Simulator docs](https://docs.expo.dev/preview/eas-simulator/introduction/).
+### EAS development client (optional later)
+
+Only needed if you add native modules Expo Go does not ship. See `eas.json` profiles and:
+
+```bash
+npm run start:dev-client
+```
+
+EAS Simulator remains deferred (waitlist).
 
 ## Scripts
 
 | Script | Purpose |
 | ------ | ------- |
-| `npm start` | Metro (LAN) |
-| `npm run start:tunnel` | Dev client + tunnel (physical phone from WSL) |
+| `npm start` | Metro (LAN — fine on same Wi‑Fi outside WSL) |
+| `npm run start:tunnel` | Expo Go + tunnel (physical phone from WSL; needs `@expo/ngrok`) |
+| `npm run start:dev-client` | Custom EAS dev client + tunnel |
 | `npm run typecheck` | TypeScript |
 
 ## v1 scope

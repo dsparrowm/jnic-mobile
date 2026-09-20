@@ -6,7 +6,8 @@
   "license": "0BSD",
   "scripts": {
     "start": "expo start",
-    "start:tunnel": "expo start --dev-client --tunnel",
+    "start:tunnel": "expo start --tunnel",
+    "start:dev-client": "expo start --dev-client --tunnel",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",

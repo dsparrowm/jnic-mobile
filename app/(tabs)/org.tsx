@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Modal,
   Pressable,
@@ -8,12 +7,24 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { NIGERIAN_STATES } from "@repo/types";
 import { api, ApiError, type OrgState } from "@/src/lib/api";
-import { colors, radius, spacing } from "@/src/theme/tokens";
+import {
+  Chip,
+  ChipRow,
+  EmptyState,
+  Field,
+  GhostButton,
+  PrimaryButton,
+} from "@/src/components/ui";
+import { StatusPill } from "@/src/components/premium/controls";
+import { PremiumHeader } from "@/src/components/premium/screen";
+import { InlineNotice, ScreenSkeleton } from "@/src/components/premium/states";
+import { SheetHeader } from "@/src/components/premium/sheet-header";
+import { colors, layout, radius, spacing, typography } from "@/src/theme/tokens";
 
 type CreateKind = "state" | "zone" | "branch" | null;
 
@@ -76,6 +87,34 @@ export default function OrgScreen() {
     setCreateKind(kind);
   }
 
+  function requestCloseCreate() {
+    if (busy) return;
+    const dirty =
+      zoneName.trim().length > 0 ||
+      branchName.trim().length > 0 ||
+      branchAddress.trim().length > 0 ||
+      stateName !== (NIGERIAN_STATES[0] ?? "");
+    if (!dirty) {
+      setCreateKind(null);
+      return;
+    }
+    Alert.alert("Discard changes?", "The organisation details you entered will be lost.", [
+      { text: "Keep editing", style: "cancel" },
+      {
+        text: "Discard",
+        style: "destructive",
+        onPress: () => {
+          setCreateKind(null);
+          setZoneName("");
+          setBranchName("");
+          setBranchAddress("");
+          setStateName(NIGERIAN_STATES[0] ?? "");
+          setFormError(null);
+        },
+      },
+    ]);
+  }
+
   async function submitCreate() {
     setFormError(null);
     setBusy(true);
@@ -114,31 +153,31 @@ export default function OrgScreen() {
 
   return (
     <View style={styles.root}>
-      <View style={styles.headerRow}>
-        <Text style={styles.heading}>Organization</Text>
-      </View>
+      <PremiumHeader
+        title="Organization"
+        subtitle="States, zones, and branches"
+        icon="business"
+        right={<StatusPill label={`${tree.length} states`} tone="warning" />}
+      />
+      <ChipRow>
+        <Pressable style={styles.primaryChip} onPress={() => openCreate("state")}>
+          <Text style={styles.primaryChipText}>+ State</Text>
+        </Pressable>
+        <Pressable style={styles.secondaryChip} onPress={() => openCreate("zone")}>
+          <Text style={styles.secondaryChipText}>+ Zone</Text>
+        </Pressable>
+        <Pressable
+          style={styles.secondaryChip}
+          onPress={() => openCreate("branch")}
+        >
+          <Text style={styles.secondaryChipText}>+ Branch</Text>
+        </Pressable>
+      </ChipRow>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View style={styles.actions}>
-          <Pressable style={styles.primaryBtn} onPress={() => openCreate("state")}>
-            <Text style={styles.primaryBtnText}>+ State</Text>
-          </Pressable>
-          <Pressable style={styles.secondaryBtn} onPress={() => openCreate("zone")}>
-            <Text style={styles.secondaryBtnText}>+ Zone</Text>
-          </Pressable>
-          <Pressable
-            style={styles.secondaryBtn}
-            onPress={() => openCreate("branch")}
-          >
-            <Text style={styles.secondaryBtnText}>+ Branch</Text>
-          </Pressable>
-        </View>
-      </ScrollView>
-
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <InlineNotice message={error} /> : null}
 
       {loading ? (
-        <ActivityIndicator color={colors.navy} style={{ marginTop: spacing.lg }} />
+        <ScreenSkeleton rows={5} />
       ) : (
         <ScrollView
           refreshControl={
@@ -154,21 +193,31 @@ export default function OrgScreen() {
           contentContainerStyle={{ paddingBottom: spacing.xl }}
         >
           {tree.length === 0 ? (
-            <Text style={styles.empty}>No states yet. Create the first state.</Text>
+            <EmptyState
+              title="No states yet"
+              body="Create the first state to start building the hierarchy."
+            />
           ) : null}
           {tree.map((state) => {
             const open = expandedStates[state.id] ?? true;
             return (
               <View key={state.id} style={styles.node}>
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: open }}
                   onPress={() =>
                     setExpandedStates((s) => ({ ...s, [state.id]: !open }))
                   }
                   style={styles.nodeHeader}
                 >
-                  <Text style={styles.stateName}>
-                    {open ? "▾" : "▸"} {state.name}
-                  </Text>
+                  <View style={styles.nodeLabel}>
+                    <Ionicons
+                      name={open ? "chevron-down" : "chevron-forward"}
+                      size={17}
+                      color={colors.navy}
+                    />
+                    <Text style={styles.stateName}>{state.name}</Text>
+                  </View>
                   <Text style={styles.count}>{state.zones.length} zones</Text>
                 </Pressable>
                 {open
@@ -177,6 +226,8 @@ export default function OrgScreen() {
                       return (
                         <View key={zone.id} style={styles.zoneBlock}>
                           <Pressable
+                            accessibilityRole="button"
+                            accessibilityState={{ expanded: zoneOpen }}
                             onPress={() =>
                               setExpandedZones((z) => ({
                                 ...z,
@@ -185,18 +236,28 @@ export default function OrgScreen() {
                             }
                             style={styles.nodeHeader}
                           >
-                            <Text style={styles.zoneName}>
-                              {zoneOpen ? "▾" : "▸"} {zone.name}
-                            </Text>
+                            <View style={styles.nodeLabel}>
+                              <Ionicons
+                                name={zoneOpen ? "chevron-down" : "chevron-forward"}
+                                size={15}
+                                color={colors.textPrimary}
+                              />
+                              <Text style={styles.zoneName}>{zone.name}</Text>
+                            </View>
                             <Text style={styles.count}>
                               {zone.branches.length} branches
                             </Text>
                           </Pressable>
                           {zoneOpen
                             ? zone.branches.map((branch) => (
-                                <Text key={branch.id} style={styles.branchName}>
-                                  • {branch.name}
-                                </Text>
+                                <View key={branch.id} style={styles.branchRow}>
+                                  <Ionicons
+                                    name="location-outline"
+                                    size={15}
+                                    color={colors.gold}
+                                  />
+                                  <Text style={styles.branchName}>{branch.name}</Text>
+                                </View>
                               ))
                             : null}
                         </View>
@@ -213,14 +274,24 @@ export default function OrgScreen() {
         visible={createKind !== null}
         animationType="slide"
         presentationStyle="pageSheet"
+        onRequestClose={requestCloseCreate}
       >
         <ScrollView
           style={styles.modalRoot}
           contentContainerStyle={{ padding: spacing.lg, paddingBottom: 48 }}
         >
-          <Text style={styles.modalTitle}>
-            Create {createKind === "state" ? "state" : createKind === "zone" ? "zone" : "branch"}
-          </Text>
+          <SheetHeader
+            title={`Create ${
+              createKind === "state"
+                ? "state"
+                : createKind === "zone"
+                  ? "zone"
+                  : "branch"
+            }`}
+            subtitle="Add a new unit to the JNIC hierarchy."
+            onClose={requestCloseCreate}
+            closeDisabled={busy}
+          />
 
           {createKind === "state" ? (
             <>
@@ -252,36 +323,21 @@ export default function OrgScreen() {
           {createKind === "zone" ? (
             <>
               <Text style={styles.label}>Parent state</Text>
-              <ScrollView horizontal>
-                <View style={styles.actions}>
-                  {tree.map((s) => (
-                    <Pressable
-                      key={s.id}
-                      style={[
-                        styles.chip,
-                        zoneStateId === s.id && styles.chipActive,
-                      ]}
-                      onPress={() => setZoneStateId(s.id)}
-                    >
-                      <Text
-                        style={[
-                          styles.chipText,
-                          zoneStateId === s.id && styles.chipTextActive,
-                        ]}
-                      >
-                        {s.name}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </ScrollView>
-              <Text style={styles.label}>Zone name</Text>
-              <TextInput
-                style={styles.input}
+              <ChipRow>
+                {tree.map((s) => (
+                  <Chip
+                    key={s.id}
+                    label={s.name}
+                    active={zoneStateId === s.id}
+                    onPress={() => setZoneStateId(s.id)}
+                  />
+                ))}
+              </ChipRow>
+              <Field
+                label="Zone name"
                 value={zoneName}
                 onChangeText={setZoneName}
                 placeholder="e.g. Lagos Central"
-                placeholderTextColor={colors.textMuted}
               />
             </>
           ) : null}
@@ -289,93 +345,56 @@ export default function OrgScreen() {
           {createKind === "branch" ? (
             <>
               <Text style={styles.label}>State</Text>
-              <ScrollView horizontal>
-                <View style={styles.actions}>
-                  {tree.map((s) => (
-                    <Pressable
-                      key={s.id}
-                      style={[
-                        styles.chip,
-                        branchStateId === s.id && styles.chipActive,
-                      ]}
-                      onPress={() => {
-                        setBranchStateId(s.id);
-                        setBranchZoneId(s.zones[0]?.id ?? "");
-                      }}
-                    >
-                      <Text
-                        style={[
-                          styles.chipText,
-                          branchStateId === s.id && styles.chipTextActive,
-                        ]}
-                      >
-                        {s.name}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </ScrollView>
+              <ChipRow>
+                {tree.map((s) => (
+                  <Chip
+                    key={s.id}
+                    label={s.name}
+                    active={branchStateId === s.id}
+                    onPress={() => {
+                      setBranchStateId(s.id);
+                      setBranchZoneId(s.zones[0]?.id ?? "");
+                    }}
+                  />
+                ))}
+              </ChipRow>
               <Text style={styles.label}>Zone</Text>
-              <ScrollView horizontal>
-                <View style={styles.actions}>
-                  {zonesForBranch.map((z) => (
-                    <Pressable
-                      key={z.id}
-                      style={[
-                        styles.chip,
-                        branchZoneId === z.id && styles.chipActive,
-                      ]}
-                      onPress={() => setBranchZoneId(z.id)}
-                    >
-                      <Text
-                        style={[
-                          styles.chipText,
-                          branchZoneId === z.id && styles.chipTextActive,
-                        ]}
-                      >
-                        {z.name}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </ScrollView>
-              <Text style={styles.label}>Branch name</Text>
-              <TextInput
-                style={styles.input}
+              <ChipRow>
+                {zonesForBranch.map((z) => (
+                  <Chip
+                    key={z.id}
+                    label={z.name}
+                    active={branchZoneId === z.id}
+                    onPress={() => setBranchZoneId(z.id)}
+                  />
+                ))}
+              </ChipRow>
+              <Field
+                label="Branch name"
                 value={branchName}
                 onChangeText={setBranchName}
-                placeholderTextColor={colors.textMuted}
               />
-              <Text style={styles.label}>Address (optional)</Text>
-              <TextInput
-                style={styles.input}
+              <Field
+                label="Address (optional)"
                 value={branchAddress}
                 onChangeText={setBranchAddress}
-                placeholderTextColor={colors.textMuted}
               />
             </>
           ) : null}
 
-          {formError ? <Text style={styles.error}>{formError}</Text> : null}
+          {formError ? <InlineNotice message={formError} /> : null}
 
           <View style={styles.modalActions}>
-            <Pressable
-              style={styles.secondaryBtnWide}
-              onPress={() => setCreateKind(null)}
-            >
-              <Text style={styles.secondaryBtnText}>Cancel</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.primaryBtn, busy && { opacity: 0.6 }]}
-              disabled={busy}
-              onPress={() => void submitCreate()}
-            >
-              {busy ? (
-                <ActivityIndicator color={colors.goldForeground} />
-              ) : (
-                <Text style={styles.primaryBtnText}>Create</Text>
-              )}
-            </Pressable>
+            <View style={{ flex: 1 }}>
+              <GhostButton label="Cancel" onPress={requestCloseCreate} disabled={busy} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <PrimaryButton
+                label="Create"
+                loading={busy}
+                onPress={() => void submitCreate()}
+              />
+            </View>
           </View>
         </ScrollView>
       </Modal>
@@ -387,114 +406,113 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.bgBase,
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
+    paddingHorizontal: layout.screenPad,
+    paddingTop: spacing.xs,
   },
-  headerRow: { marginBottom: spacing.sm },
-  heading: { fontSize: 22, fontWeight: "700", color: colors.navy },
   actions: {
     flexDirection: "row",
-    gap: spacing.xs,
-    marginBottom: spacing.sm,
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  primaryChip: {
+    backgroundColor: colors.navy,
+    borderRadius: radius.full,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    alignSelf: "center",
+  },
+  primaryChipText: {
+    ...typography.footnote,
+    fontWeight: "700",
+    color: colors.textOnNavy,
+  },
+  secondaryChip: {
+    backgroundColor: colors.bgSurface,
+    borderRadius: radius.full,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignSelf: "center",
+  },
+  secondaryChipText: {
+    ...typography.footnote,
+    fontWeight: "600",
+    color: colors.navy,
   },
   node: {
     backgroundColor: colors.bgSurface,
     borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
     padding: spacing.md,
     marginBottom: spacing.sm,
   },
   nodeHeader: {
+    minHeight: 44,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  stateName: { fontWeight: "700", color: colors.navy, fontSize: 16 },
-  zoneBlock: { marginTop: spacing.sm, paddingLeft: spacing.sm },
-  zoneName: { fontWeight: "600", color: colors.textPrimary },
-  branchName: {
-    marginTop: 4,
-    marginLeft: spacing.md,
-    color: colors.textMuted,
-    fontSize: 13,
+  nodeLabel: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
   },
-  count: { color: colors.textMuted, fontSize: 12 },
-  empty: { textAlign: "center", color: colors.textMuted, marginTop: spacing.xl },
-  error: { color: colors.error, marginVertical: spacing.sm },
+  stateName: {
+    ...typography.bodyStrong,
+    color: colors.navy,
+  },
+  zoneBlock: { marginTop: spacing.sm, paddingLeft: spacing.xs },
+  zoneName: {
+    ...typography.callout,
+    fontWeight: "600",
+    color: colors.textPrimary,
+  },
+  branchRow: {
+    minHeight: 38,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    marginLeft: spacing.lg,
+  },
+  branchName: {
+    ...typography.footnote,
+    color: colors.textMuted,
+  },
+  count: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  error: {
+    ...typography.footnote,
+    color: colors.error,
+    marginVertical: spacing.sm,
+  },
   modalRoot: { flex: 1, backgroundColor: colors.bgSurface },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: "700",
+    ...typography.title2,
     color: colors.navy,
     marginBottom: spacing.md,
   },
   label: {
+    ...typography.caption,
+    color: colors.textMuted,
     marginTop: spacing.sm,
-    marginBottom: spacing.xs,
-    fontSize: 13,
-    fontWeight: "500",
-    color: colors.textPrimary,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    backgroundColor: colors.bgBase,
-    color: colors.textPrimary,
+    marginBottom: spacing.sm,
   },
   option: {
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.borderSubtle,
   },
   optionActive: { backgroundColor: colors.bgSubtle },
-  optionText: { color: colors.textPrimary },
+  optionText: { ...typography.body, color: colors.textPrimary },
   optionTextActive: { fontWeight: "600", color: colors.navy },
-  chip: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: colors.bgBase,
-  },
-  chipActive: { backgroundColor: colors.navy, borderColor: colors.navy },
-  chipText: { fontSize: 12, color: colors.textPrimary },
-  chipTextActive: { color: colors.goldForeground },
   modalActions: {
     flexDirection: "row",
     gap: spacing.sm,
     marginTop: spacing.lg,
   },
-  primaryBtn: {
-    backgroundColor: colors.gold,
-    borderRadius: radius.md,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 100,
-  },
-  primaryBtnText: { color: colors.goldForeground, fontWeight: "600" },
-  secondaryBtn: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    backgroundColor: colors.bgSurface,
-  },
-  secondaryBtnWide: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingVertical: 10,
-    alignItems: "center",
-  },
-  secondaryBtnText: { color: colors.textPrimary, fontWeight: "500" },
 });

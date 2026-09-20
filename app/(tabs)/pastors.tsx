@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   FlatList,
   Modal,
@@ -9,7 +8,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import {
@@ -25,22 +23,33 @@ import {
   type PastorRecord,
   type PastorListSummary,
 } from "@/src/lib/api";
-import { colors, radius, spacing } from "@/src/theme/tokens";
+import {
+  Avatar,
+  Chip,
+  ChipRow,
+  EmptyState,
+  Field,
+  GhostButton,
+  PrimaryButton,
+} from "@/src/components/ui";
+import { SearchField, StatusPill } from "@/src/components/premium/controls";
+import { PremiumHeader } from "@/src/components/premium/screen";
+import { InlineNotice, ScreenSkeleton } from "@/src/components/premium/states";
+import { SheetHeader } from "@/src/components/premium/sheet-header";
+import { colors, layout, radius, spacing, typography } from "@/src/theme/tokens";
 
 function formatRole(role: string) {
-  return role.replace(/_/g, " ");
+  return role.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function statusColor(status: string) {
+function statusTone(status: string): "success" | "warning" | "neutral" {
   switch (status) {
     case UserStatus.ACTIVE:
-      return colors.success;
+      return "success";
     case UserStatus.PENDING:
-      return colors.warning;
-    case UserStatus.DEACTIVATED:
-      return colors.textMuted;
+      return "warning";
     default:
-      return colors.textMuted;
+      return "neutral";
   }
 }
 
@@ -89,138 +98,89 @@ function OrgCascadeFields({
   const needsBranch = value.role === Role.BRANCH_PASTOR;
 
   return (
-    <View style={{ gap: spacing.sm }}>
-      <Text style={styles.label}>Role</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View style={styles.chipRow}>
-          {ONBOARDABLE_ROLES.map((role) => (
-            <Pressable
-              key={role}
-              style={[styles.chip, value.role === role && styles.chipActive]}
-              onPress={() =>
-                onChange({
-                  role,
-                  stateId: "",
-                  zoneId: "",
-                  branchId: "",
-                })
-              }
-            >
-              <Text
-                style={[
-                  styles.chipText,
-                  value.role === role && styles.chipTextActive,
-                ]}
-              >
-                {formatRole(role)}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      </ScrollView>
+    <View style={{ gap: spacing.md }}>
+      <Text style={styles.fieldCaption}>Role</Text>
+      <ChipRow>
+        {ONBOARDABLE_ROLES.map((role) => (
+          <Chip
+            key={role}
+            label={formatRole(role)}
+            active={value.role === role}
+            onPress={() =>
+              onChange({
+                role,
+                stateId: "",
+                zoneId: "",
+                branchId: "",
+              })
+            }
+          />
+        ))}
+      </ChipRow>
 
       {needsState ? (
         <>
-          <Text style={styles.label}>State</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.chipRow}>
-              {orgTree.map((state) => (
-                <Pressable
-                  key={state.id}
-                  style={[
-                    styles.chip,
-                    value.stateId === state.id && styles.chipActive,
-                  ]}
-                  onPress={() =>
-                    onChange({
-                      ...value,
-                      stateId: state.id,
-                      zoneId: "",
-                      branchId: "",
-                    })
-                  }
-                >
-                  <Text
-                    style={[
-                      styles.chipText,
-                      value.stateId === state.id && styles.chipTextActive,
-                    ]}
-                  >
-                    {state.name}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </ScrollView>
+          <Text style={styles.fieldCaption}>State</Text>
+          <ChipRow>
+            {orgTree.map((state) => (
+              <Chip
+                key={state.id}
+                label={state.name}
+                active={value.stateId === state.id}
+                onPress={() =>
+                  onChange({
+                    ...value,
+                    stateId: state.id,
+                    zoneId: "",
+                    branchId: "",
+                  })
+                }
+              />
+            ))}
+          </ChipRow>
         </>
       ) : null}
 
       {needsZone ? (
         <>
-          <Text style={styles.label}>Zone</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.chipRow}>
-              {zones.map((zone) => (
-                <Pressable
-                  key={zone.id}
-                  style={[
-                    styles.chip,
-                    value.zoneId === zone.id && styles.chipActive,
-                  ]}
-                  onPress={() =>
-                    onChange({
-                      ...value,
-                      zoneId: zone.id,
-                      branchId: "",
-                    })
-                  }
-                >
-                  <Text
-                    style={[
-                      styles.chipText,
-                      value.zoneId === zone.id && styles.chipTextActive,
-                    ]}
-                  >
-                    {zone.name}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </ScrollView>
+          <Text style={styles.fieldCaption}>Zone</Text>
+          <ChipRow>
+            {zones.map((zone) => (
+              <Chip
+                key={zone.id}
+                label={zone.name}
+                active={value.zoneId === zone.id}
+                onPress={() =>
+                  onChange({
+                    ...value,
+                    zoneId: zone.id,
+                    branchId: "",
+                  })
+                }
+              />
+            ))}
+          </ChipRow>
         </>
       ) : null}
 
       {needsBranch ? (
         <>
-          <Text style={styles.label}>Branch</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.chipRow}>
-              {branches.map((branch) => (
-                <Pressable
-                  key={branch.id}
-                  style={[
-                    styles.chip,
-                    value.branchId === branch.id && styles.chipActive,
-                  ]}
-                  onPress={() =>
-                    onChange({
-                      ...value,
-                      branchId: branch.id,
-                    })
-                  }
-                >
-                  <Text
-                    style={[
-                      styles.chipText,
-                      value.branchId === branch.id && styles.chipTextActive,
-                    ]}
-                  >
-                    {branch.name}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </ScrollView>
+          <Text style={styles.fieldCaption}>Branch</Text>
+          <ChipRow>
+            {branches.map((branch) => (
+              <Chip
+                key={branch.id}
+                label={branch.name}
+                active={value.branchId === branch.id}
+                onPress={() =>
+                  onChange({
+                    ...value,
+                    branchId: branch.id,
+                  })
+                }
+              />
+            ))}
+          </ChipRow>
         </>
       ) : null}
     </View>
@@ -249,6 +209,7 @@ export default function PastorsScreen() {
     zoneId: "",
     branchId: "",
   });
+  const [reassignInitial, setReassignInitial] = useState<OrgForm | null>(null);
   const [reassignBusy, setReassignBusy] = useState(false);
   const [reassignError, setReassignError] = useState<string | null>(null);
 
@@ -336,6 +297,7 @@ export default function PastorsScreen() {
         branchId: reassignForm.branchId || null,
       });
       setReassignPastor(null);
+      setReassignInitial(null);
       await load();
     } catch (err) {
       setReassignError(
@@ -346,12 +308,52 @@ export default function PastorsScreen() {
     }
   }
 
+  function requestCloseOnboard() {
+    if (onboardBusy) return;
+    const dirty = JSON.stringify(onboardForm) !== JSON.stringify(INITIAL_ONBOARD);
+    if (!dirty) {
+      setOnboardOpen(false);
+      return;
+    }
+    Alert.alert("Discard invite?", "The information you entered will be lost.", [
+      { text: "Keep editing", style: "cancel" },
+      {
+        text: "Discard",
+        style: "destructive",
+        onPress: () => {
+          setOnboardOpen(false);
+          setOnboardForm(INITIAL_ONBOARD);
+          setOnboardError(null);
+        },
+      },
+    ]);
+  }
+
+  function requestCloseReassign() {
+    if (reassignBusy) return;
+    const dirty =
+      reassignInitial !== null &&
+      JSON.stringify(reassignForm) !== JSON.stringify(reassignInitial);
+    if (!dirty) {
+      setReassignPastor(null);
+      return;
+    }
+    Alert.alert("Discard changes?", "This pastor’s assignment will not be updated.", [
+      { text: "Keep editing", style: "cancel" },
+      {
+        text: "Discard",
+        style: "destructive",
+        onPress: () => setReassignPastor(null),
+      },
+    ]);
+  }
+
   function openActions(pastor: PastorRecord) {
     const buttons: {
       text: string;
       style?: "cancel" | "destructive" | "default";
       onPress?: () => void;
-    }[] = [{ text: "Cancel", style: "cancel" }];
+    }[] = [{ text: CancelLabel, style: "cancel" }];
 
     if (pastor.status === UserStatus.PENDING) {
       buttons.push({
@@ -377,12 +379,14 @@ export default function PastorsScreen() {
       buttons.push({
         text: "Reassign",
         onPress: () => {
-          setReassignForm({
+          const next = {
             role: pastor.role,
             stateId: pastor.state?.id ?? "",
             zoneId: pastor.zone?.id ?? "",
             branchId: pastor.branch?.id ?? "",
-          });
+          };
+          setReassignForm(next);
+          setReassignInitial(next);
           setReassignError(null);
           setReassignPastor(pastor);
         },
@@ -398,7 +402,7 @@ export default function PastorsScreen() {
             "Deactivate pastor?",
             `${pastor.name} will lose access immediately.`,
             [
-              { text: "Cancel", style: "cancel" },
+              { text: CancelLabel, style: "cancel" },
               {
                 text: "Deactivate",
                 style: "destructive",
@@ -429,68 +433,57 @@ export default function PastorsScreen() {
 
   return (
     <View style={styles.root}>
-      <View style={styles.headerRow}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.heading}>Pastors</Text>
-          {summary ? (
-            <Text style={styles.summary}>
-              {summary.total} total · {summary.active} active · {summary.pending}{" "}
-              pending
-            </Text>
-          ) : null}
-        </View>
-        <Pressable style={styles.primaryBtn} onPress={() => setOnboardOpen(true)}>
-          <Text style={styles.primaryBtnText}>Onboard</Text>
-        </Pressable>
-      </View>
-
-      <TextInput
-        placeholder="Search name or email"
-        placeholderTextColor={colors.textMuted}
-        style={styles.search}
-        value={search}
-        onChangeText={setSearch}
-        autoCapitalize="none"
+      <PremiumHeader
+        title="Pastors"
+        icon="people"
+        subtitle={
+          summary
+            ? `${summary.active} active · ${summary.pending} pending`
+            : "Directory"
+        }
+        right={
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Onboard pastor"
+            style={styles.onboardBtn}
+            onPress={() => setOnboardOpen(true)}
+          >
+            <Text style={styles.onboardBtnText}>Onboard</Text>
+          </Pressable>
+        }
       />
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View style={styles.chipRow}>
-          {[
-            { label: "All", value: undefined },
-            { label: "Active", value: UserStatus.ACTIVE },
-            { label: "Pending", value: UserStatus.PENDING },
-            { label: "Deactivated", value: UserStatus.DEACTIVATED },
-          ].map((opt) => (
-            <Pressable
-              key={opt.label}
-              style={[
-                styles.chip,
-                statusFilter === opt.value && styles.chipActive,
-              ]}
-              onPress={() => setStatusFilter(opt.value)}
-            >
-              <Text
-                style={[
-                  styles.chipText,
-                  statusFilter === opt.value && styles.chipTextActive,
-                ]}
-              >
-                {opt.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      </ScrollView>
+      <SearchField
+        placeholder="Search name or email"
+        value={search}
+        onChangeText={setSearch}
+      />
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      <ChipRow>
+        {[
+          { label: "All", value: undefined },
+          { label: "Active", value: UserStatus.ACTIVE },
+          { label: "Pending", value: UserStatus.PENDING },
+          { label: "Deactivated", value: UserStatus.DEACTIVATED },
+        ].map((opt) => (
+          <Chip
+            key={opt.label}
+            label={opt.label}
+            active={statusFilter === opt.value}
+            onPress={() => setStatusFilter(opt.value)}
+          />
+        ))}
+      </ChipRow>
+
+      {error ? <InlineNotice message={error} /> : null}
 
       {loading ? (
-        <ActivityIndicator style={{ marginTop: spacing.lg }} color={colors.navy} />
+        <ScreenSkeleton rows={5} />
       ) : (
         <FlatList
           data={items}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingVertical: spacing.md, gap: spacing.sm }}
+          contentContainerStyle={{ paddingVertical: spacing.md, gap: 0 }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -502,55 +495,76 @@ export default function PastorsScreen() {
             />
           }
           ListEmptyComponent={
-            <Text style={styles.empty}>No pastors match these filters.</Text>
+            <EmptyState
+              title="No pastors found"
+              body="Try another filter or onboard someone new."
+            />
           }
-          renderItem={({ item }) => (
-            <Pressable style={styles.card} onPress={() => openActions(item)}>
-              <View style={styles.cardTop}>
-                <Text style={styles.cardName}>{item.name}</Text>
-                <Text style={[styles.badge, { color: statusColor(item.status) }]}>
-                  {item.status}
+          renderItem={({ item, index }) => (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${item.name}, ${formatRole(item.role)}, ${item.status}`}
+              style={[
+                styles.row,
+                index === 0 && styles.rowFirst,
+                index === items.length - 1 && styles.rowLast,
+                index !== items.length - 1 && styles.rowDivider,
+              ]}
+              onPress={() => openActions(item)}
+            >
+              <Avatar name={item.name} imageUri={item.profilePicUrl} size={42} />
+              <View style={styles.rowBody}>
+                <View style={styles.rowTop}>
+                  <Text style={styles.rowName}>{item.name}</Text>
+                  <StatusPill label={item.status} tone={statusTone(item.status)} />
+                </View>
+                <Text style={styles.rowMeta}>{item.email}</Text>
+                <Text style={styles.rowMeta}>
+                  {formatRole(item.role)}
+                  {item.branch?.name
+                    ? ` · ${item.branch.name}`
+                    : item.zone?.name
+                      ? ` · ${item.zone.name}`
+                      : item.state?.name
+                        ? ` · ${item.state.name}`
+                        : ""}
                 </Text>
               </View>
-              <Text style={styles.cardMeta}>{item.email}</Text>
-              <Text style={styles.cardMeta}>
-                {formatRole(item.role)}
-                {item.branch?.name
-                  ? ` · ${item.branch.name}`
-                  : item.zone?.name
-                    ? ` · ${item.zone.name}`
-                    : item.state?.name
-                      ? ` · ${item.state.name}`
-                      : ""}
-              </Text>
             </Pressable>
           )}
         />
       )}
 
-      <Modal visible={onboardOpen} animationType="slide" presentationStyle="pageSheet">
+      <Modal
+        visible={onboardOpen}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={requestCloseOnboard}
+      >
         <ScrollView
           style={styles.modalRoot}
           contentContainerStyle={{ padding: spacing.lg, paddingBottom: 48 }}
         >
-          <Text style={styles.modalTitle}>Onboard pastor</Text>
-          <Text style={styles.label}>Name</Text>
-          <TextInput
-            style={styles.input}
+          <SheetHeader
+            title="Onboard pastor"
+            subtitle="Send a secure setup invitation."
+            onClose={requestCloseOnboard}
+            closeDisabled={onboardBusy}
+          />
+          <Field
+            label="Name"
             value={onboardForm.name}
             onChangeText={(name) => setOnboardForm((f) => ({ ...f, name }))}
           />
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={styles.input}
+          <Field
+            label="Email"
             autoCapitalize="none"
             keyboardType="email-address"
             value={onboardForm.email}
             onChangeText={(email) => setOnboardForm((f) => ({ ...f, email }))}
           />
-          <Text style={styles.label}>Phone (optional)</Text>
-          <TextInput
-            style={styles.input}
+          <Field
+            label="Phone (optional)"
             keyboardType="phone-pad"
             value={onboardForm.phone}
             onChangeText={(phone) => setOnboardForm((f) => ({ ...f, phone }))}
@@ -560,25 +574,18 @@ export default function PastorsScreen() {
             value={onboardForm}
             onChange={(next) => setOnboardForm((f) => ({ ...f, ...next }))}
           />
-          {onboardError ? <Text style={styles.error}>{onboardError}</Text> : null}
+          {onboardError ? <InlineNotice message={onboardError} /> : null}
           <View style={styles.modalActions}>
-            <Pressable
-              style={styles.secondaryBtn}
-              onPress={() => setOnboardOpen(false)}
-            >
-              <Text style={styles.secondaryBtnText}>Cancel</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.primaryBtn, onboardBusy && { opacity: 0.6 }]}
-              disabled={onboardBusy}
-              onPress={() => void submitOnboard()}
-            >
-              {onboardBusy ? (
-                <ActivityIndicator color={colors.goldForeground} />
-              ) : (
-                <Text style={styles.primaryBtnText}>Send invite</Text>
-              )}
-            </Pressable>
+            <View style={{ flex: 1 }}>
+              <GhostButton label="Cancel" onPress={requestCloseOnboard} disabled={onboardBusy} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <PrimaryButton
+                label="Send invite"
+                loading={onboardBusy}
+                onPress={() => void submitOnboard()}
+              />
+            </View>
           </View>
         </ScrollView>
       </Modal>
@@ -587,36 +594,35 @@ export default function PastorsScreen() {
         visible={Boolean(reassignPastor)}
         animationType="slide"
         presentationStyle="pageSheet"
+        onRequestClose={requestCloseReassign}
       >
         <ScrollView
           style={styles.modalRoot}
           contentContainerStyle={{ padding: spacing.lg, paddingBottom: 48 }}
         >
-          <Text style={styles.modalTitle}>Reassign {reassignPastor?.name}</Text>
+          <SheetHeader
+            title={`Reassign ${reassignPastor?.name ?? "pastor"}`}
+            subtitle="Update role and organisation assignment."
+            onClose={requestCloseReassign}
+            closeDisabled={reassignBusy}
+          />
           <OrgCascadeFields
             orgTree={orgTree}
             value={reassignForm}
             onChange={setReassignForm}
           />
-          {reassignError ? <Text style={styles.error}>{reassignError}</Text> : null}
+          {reassignError ? <InlineNotice message={reassignError} /> : null}
           <View style={styles.modalActions}>
-            <Pressable
-              style={styles.secondaryBtn}
-              onPress={() => setReassignPastor(null)}
-            >
-              <Text style={styles.secondaryBtnText}>Cancel</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.primaryBtn, reassignBusy && { opacity: 0.6 }]}
-              disabled={reassignBusy}
-              onPress={() => void submitReassign()}
-            >
-              {reassignBusy ? (
-                <ActivityIndicator color={colors.goldForeground} />
-              ) : (
-                <Text style={styles.primaryBtnText}>Save</Text>
-              )}
-            </Pressable>
+            <View style={{ flex: 1 }}>
+              <GhostButton label="Cancel" onPress={requestCloseReassign} disabled={reassignBusy} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <PrimaryButton
+                label="Save"
+                loading={reassignBusy}
+                onPress={() => void submitReassign()}
+              />
+            </View>
           </View>
         </ScrollView>
       </Modal>
@@ -624,154 +630,122 @@ export default function PastorsScreen() {
   );
 }
 
+const CancelLabel = "Cancel";
+
 const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.bgBase,
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
+    paddingHorizontal: layout.screenPad,
   },
-  headerRow: {
+  toolbar: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.sm,
     marginBottom: spacing.sm,
+    marginTop: spacing.xs,
   },
-  heading: {
-    fontSize: 22,
+  onboardBtn: {
+    backgroundColor: colors.navy,
+    borderRadius: radius.full,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  onboardBtnText: {
+    ...typography.footnote,
     fontWeight: "700",
-    color: colors.navy,
-  },
-  summary: {
-    marginTop: 2,
-    color: colors.textMuted,
-    fontSize: 12,
+    color: colors.textOnNavy,
   },
   search: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.bgSurface,
+    ...typography.body,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
-    paddingVertical: 10,
+    paddingVertical: 12,
     marginBottom: spacing.sm,
     color: colors.textPrimary,
+    backgroundColor: colors.bgSurface,
   },
   chipRow: {
     flexDirection: "row",
-    gap: spacing.xs,
+    gap: spacing.sm,
     paddingBottom: spacing.sm,
   },
-  chip: {
-    borderWidth: 1,
-    borderColor: colors.border,
+  fieldCaption: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
     backgroundColor: colors.bgSurface,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 14,
   },
-  chipActive: {
-    backgroundColor: colors.navy,
-    borderColor: colors.navy,
+  rowFirst: {
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
   },
-  chipText: {
-    fontSize: 12,
-    color: colors.textPrimary,
+  rowLast: {
+    borderBottomLeftRadius: radius.lg,
+    borderBottomRightRadius: radius.lg,
   },
-  chipTextActive: {
-    color: colors.goldForeground,
+  rowDivider: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.borderSubtle,
   },
-  card: {
-    backgroundColor: colors.bgSurface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-  },
-  cardTop: {
+  rowTop: {
     flexDirection: "row",
     justifyContent: "space-between",
     gap: spacing.sm,
+    alignItems: "center",
   },
-  cardName: {
-    fontWeight: "600",
-    fontSize: 16,
+  rowBody: {
+    flex: 1,
+    minWidth: 0,
+  },
+  rowName: {
+    ...typography.bodyStrong,
     color: colors.textPrimary,
     flex: 1,
   },
-  badge: {
-    fontSize: 11,
-    fontWeight: "700",
+  statusWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  statusText: {
+    ...typography.caption,
+    color: colors.textMuted,
     textTransform: "uppercase",
   },
-  cardMeta: {
-    marginTop: 4,
+  rowMeta: {
+    ...typography.footnote,
     color: colors.textMuted,
-    fontSize: 13,
-  },
-  empty: {
-    textAlign: "center",
-    color: colors.textMuted,
-    marginTop: spacing.xl,
+    marginTop: 3,
   },
   error: {
+    ...typography.footnote,
     color: colors.error,
     marginVertical: spacing.sm,
-  },
-  label: {
-    marginTop: spacing.sm,
-    marginBottom: spacing.xs,
-    fontSize: 13,
-    fontWeight: "500",
-    color: colors.textPrimary,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    backgroundColor: colors.bgBase,
-    color: colors.textPrimary,
   },
   modalRoot: {
     flex: 1,
     backgroundColor: colors.bgSurface,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: "700",
+    ...typography.title2,
     color: colors.navy,
-    marginBottom: spacing.sm,
+  },
+  modalSub: {
+    ...typography.callout,
+    color: colors.textMuted,
+    marginTop: spacing.xs,
+    marginBottom: spacing.lg,
   },
   modalActions: {
     flexDirection: "row",
     gap: spacing.sm,
     marginTop: spacing.lg,
-  },
-  primaryBtn: {
-    backgroundColor: colors.gold,
-    borderRadius: radius.md,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 100,
-  },
-  primaryBtnText: {
-    color: colors.goldForeground,
-    fontWeight: "600",
-  },
-  secondaryBtn: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingVertical: 10,
-    alignItems: "center",
-  },
-  secondaryBtnText: {
-    color: colors.textPrimary,
-    fontWeight: "500",
   },
 });

@@ -1,9 +1,16 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { api } from "@/src/lib/api";
+import { formatRole } from "@/src/lib/format";
 import { useAuth } from "@/src/lib/session";
-import { colors, radius, spacing } from "@/src/theme/tokens";
+import {
+  Avatar,
+  PrimaryButton,
+  Screen,
+} from "@/src/components/ui";
+import { StatusPill } from "@/src/components/premium/controls";
+import { PremiumHeader, SectionHeader, SurfaceCard } from "@/src/components/premium/screen";
+import { colors, layout, radius, spacing, typography } from "@/src/theme/tokens";
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
@@ -21,72 +28,95 @@ export default function ProfileScreen() {
   }
 
   return (
-    <View style={styles.root}>
-      <View style={styles.card}>
-        <Text style={styles.name}>{user?.name}</Text>
-        <Text style={styles.meta}>{user?.email}</Text>
-        <Text style={styles.meta}>{user?.role?.replace(/_/g, " ")}</Text>
+    <Screen padded={false}>
+      <View style={styles.root}>
+        <PremiumHeader
+          title="Your profile"
+          subtitle="Account and mobile access"
+          icon="person"
+        />
+        <SurfaceCard style={styles.identity} elevated>
+          <Avatar name={user?.name} imageUri={user?.profilePicUrl} size={72} />
+          <View style={styles.identityCopy}>
+            <Text style={styles.name}>{user?.name}</Text>
+            <Text style={styles.email}>{user?.email}</Text>
+            <StatusPill label={formatRole(user?.role)} tone="warning" />
+          </View>
+        </SurfaceCard>
+
+      <View style={styles.body}>
+        <SectionHeader title="Connection" />
+        <SurfaceCard style={styles.connection}>
+          <View>
+            <Text style={styles.connectionTitle}>JNLOP services</Text>
+            <Text style={styles.connectionBody}>Securely connected and ready</Text>
+          </View>
+          <StatusPill label="Online" tone="success" />
+        </SurfaceCard>
+
+        <View style={styles.signOut}>
+          <SectionHeader title="Session" />
+          <PrimaryButton
+            label="Sign out"
+            tone="danger"
+            loading={busy}
+            onPress={() => void onLogout()}
+          />
+        </View>
       </View>
-
-      <Text style={styles.apiLabel}>API</Text>
-      <Text style={styles.apiValue}>{api.getApiUrl()}</Text>
-
-      <Pressable style={styles.button} onPress={onLogout} disabled={busy}>
-        {busy ? (
-          <ActivityIndicator color={colors.goldForeground} />
-        ) : (
-          <Text style={styles.buttonText}>Sign out</Text>
-        )}
-      </Pressable>
-    </View>
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    paddingHorizontal: layout.screenPad,
     backgroundColor: colors.bgBase,
-    padding: spacing.lg,
   },
-  card: {
-    backgroundColor: colors.bgSurface,
-    borderRadius: radius.lg,
+  identity: {
+    flexDirection: "row",
+    gap: spacing.md,
+    alignItems: "center",
     padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: spacing.lg,
   },
+  identityCopy: { flex: 1, minWidth: 0, gap: spacing.xs },
   name: {
-    fontSize: 20,
-    fontWeight: "600",
+    ...typography.title2,
     color: colors.navy,
   },
-  meta: {
-    marginTop: 4,
+  email: {
+    ...typography.callout,
     color: colors.textMuted,
-    fontSize: 14,
+    marginTop: 2,
   },
-  apiLabel: {
-    fontSize: 12,
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
-    color: colors.textMuted,
+  body: {
+    paddingTop: spacing.lg,
+    gap: spacing.sm,
   },
-  apiValue: {
-    marginTop: 4,
-    marginBottom: spacing.lg,
-    color: colors.textPrimary,
-    fontSize: 13,
-  },
-  button: {
-    backgroundColor: colors.navy,
-    borderRadius: radius.md,
-    paddingVertical: 14,
+  connection: {
+    minHeight: 76,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.md,
+    padding: spacing.md,
   },
-  buttonText: {
-    color: colors.goldForeground,
-    fontWeight: "600",
-    fontSize: 16,
+  connectionTitle: {
+    ...typography.bodyStrong,
+    color: colors.textPrimary,
+  },
+  connectionBody: {
+    ...typography.footnote,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  signOut: {
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.errorSoft,
   },
 });
