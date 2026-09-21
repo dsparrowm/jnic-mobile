@@ -1,7 +1,11 @@
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import type { AuthResponse, AuthUser } from "./api";
-import { Role } from "@repo/types";
+import {
+  Role,
+  canLeaveFeedback as canLeaveFeedbackForRole,
+  canSubmitWeeklyReports,
+} from "@repo/types";
 
 const ACCESS_KEY = "jnlop_access";
 const REFRESH_KEY = "jnlop_refresh";
@@ -64,4 +68,26 @@ export function isLeadPastor(user: AuthUser | null): boolean {
 
 export function isHqUser(user: AuthUser | null): boolean {
   return isAdmin(user) || isLeadPastor(user);
+}
+
+export function isZonalPastor(user: AuthUser | null): boolean {
+  return user?.role === Role.ZONAL_PASTOR;
+}
+
+export function isStatePastor(user: AuthUser | null): boolean {
+  return user?.role === Role.STATE_PASTOR;
+}
+
+export function isBranchPastor(user: AuthUser | null): boolean {
+  return user?.role === Role.BRANCH_PASTOR;
+}
+
+export function canSubmitWeekly(user: AuthUser | null): boolean {
+  if (!user) return false;
+  return canSubmitWeeklyReports(user.role, user.branchId);
+}
+
+export function canLeaveFeedback(user: AuthUser | null): boolean {
+  if (!user) return false;
+  return canLeaveFeedbackForRole(user.role);
 }

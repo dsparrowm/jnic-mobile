@@ -59,6 +59,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
           backgroundColor: colors.navy,
         }}
       >
+        <StatusBar style="light" />
         <ActivityIndicator color={colors.gold} size="large" />
       </View>
     );
@@ -70,7 +71,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <PhonePreview>
         <AuthGate>
           <Stack
@@ -82,6 +83,10 @@ export default function RootLayout() {
           >
             <Stack.Screen name="login" />
             <Stack.Screen name="(tabs)" />
+            <Stack.Screen
+              name="notifications"
+              options={{ animation: "slide_from_right" }}
+            />
             <Stack.Screen name="unavailable" />
           </Stack>
         </AuthGate>

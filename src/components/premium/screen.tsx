@@ -8,24 +8,41 @@ export function PremiumHeader({
   subtitle,
   icon,
   right,
+  tone = "light",
 }: {
   title: string;
   subtitle?: string;
   icon?: React.ComponentProps<typeof Ionicons>["name"];
   right?: React.ReactNode;
+  tone?: "navy" | "light";
 }) {
   const insets = useSafeAreaInsets();
+  const light = tone === "light";
   return (
-    <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
+    <View
+      style={[
+        styles.header,
+        light && styles.headerLight,
+        { paddingTop: insets.top + spacing.md },
+      ]}
+    >
       <View style={styles.headerRow}>
         {icon ? (
-          <View style={styles.iconWell}>
-            <Ionicons name={icon} size={19} color={colors.gold} />
+          <View style={[styles.iconWell, light && styles.iconWellLight]}>
+            <Ionicons
+              name={icon}
+              size={19}
+              color={light ? colors.navy : colors.gold}
+            />
           </View>
         ) : null}
         <View style={styles.headerCopy}>
-          <Text style={styles.title}>{title}</Text>
-          {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+          <Text style={[styles.title, light && styles.titleLight]}>{title}</Text>
+          {subtitle ? (
+            <Text style={[styles.subtitle, light && styles.subtitleLight]}>
+              {subtitle}
+            </Text>
+          ) : null}
         </View>
         {right}
       </View>
@@ -72,6 +89,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.navy,
     marginBottom: -16,
   },
+  headerLight: {
+    backgroundColor: colors.bgBase,
+    paddingBottom: spacing.md,
+    marginBottom: spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.borderSubtle,
+  },
   headerRow: {
     minHeight: 54,
     flexDirection: "row",
@@ -86,6 +110,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: colors.goldSoft,
   },
+  iconWellLight: {
+    backgroundColor: colors.bgSubtle,
+  },
   headerCopy: {
     flex: 1,
     minWidth: 0,
@@ -94,11 +121,18 @@ const styles = StyleSheet.create({
     ...typography.title1,
     color: colors.textOnNavy,
   },
+  titleLight: {
+    color: colors.navy,
+  },
   subtitle: {
     ...typography.footnote,
     color: colors.textOnNavyMuted,
     marginTop: 2,
   },
+  subtitleLight: {
+    color: colors.textMuted,
+  },
+
   surface: {
     backgroundColor: colors.bgSurface,
     borderRadius: radius.lg,

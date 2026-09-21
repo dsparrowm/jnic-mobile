@@ -84,10 +84,31 @@ function OrgCascadeFields({
     return state?.zones ?? [];
   }, [orgTree, value.stateId]);
 
+  const stateRecord = useMemo(
+    () => orgTree.find((s) => s.id === value.stateId),
+    [orgTree, value.stateId],
+  );
+
   const branches = useMemo(() => {
+    if (value.role === Role.STATE_PASTOR) {
+      const zoned = zones.flatMap((zone) =>
+        zone.branches.map((branch) => ({
+          ...branch,
+          zoneName: zone.name,
+        })),
+      );
+      const unzoned = (stateRecord?.branches ?? []).map((branch) => ({
+        ...branch,
+        zoneName: null as string | null,
+      }));
+      return [...zoned, ...unzoned];
+    }
     const zone = zones.find((z) => z.id === value.zoneId);
-    return zone?.branches ?? [];
-  }, [zones, value.zoneId]);
+    return (zone?.branches ?? []).map((branch) => ({
+      ...branch,
+      zoneName: zone?.name ?? null,
+    }));
+  }, [stateRecord?.branches, value.role, value.zoneId, zones]);
 
   const needsState =
     value.role === Role.STATE_PASTOR ||
@@ -96,6 +117,8 @@ function OrgCascadeFields({
   const needsZone =
     value.role === Role.ZONAL_PASTOR || value.role === Role.BRANCH_PASTOR;
   const needsBranch = value.role === Role.BRANCH_PASTOR;
+  const optionalBranch =
+    value.role === Role.STATE_PASTOR || value.role === Role.ZONAL_PASTOR;
 
   return (
     <View style={{ gap: spacing.md }}>
@@ -176,6 +199,39 @@ function OrgCascadeFields({
                   onChange({
                     ...value,
                     branchId: branch.id,
+                  })
+                }
+              />
+            ))}
+          </ChipRow>
+        </>
+      ) : null}
+
+      {optionalBranch ? (
+        <>
+          <Text style={styles.fieldCaption}>Home branch (optional)</Text>
+          <ChipRow>
+            <Chip
+              label="None"
+              active={!value.branchId}
+              onPress={() =>
+                onChange({
+                  ...value,
+                  branchId: "",
+                  zoneId: value.role === Role.STATE_PASTOR ? "" : value.zoneId,
+                })
+              }
+            />
+            {branches.map((branch) => (
+              <Chip
+                key={branch.id}
+                label={branch.zoneName ? `${branch.name} · ${branch.zoneName}` : branch.name}
+                active={value.branchId === branch.id}
+                onPress={() =>
+                  onChange({
+                    ...value,
+                    branchId: branch.id,
+                    zoneId: branch.zoneId ?? "",
                   })
                 }
               />
@@ -491,7 +547,7 @@ export default function PastorsScreen() {
                 setRefreshing(true);
                 void load();
               }}
-              tintColor={colors.navy}
+              tintColor={colors.gold}
             />
           }
           ListEmptyComponent={
@@ -646,7 +702,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   onboardBtn: {
-    backgroundColor: colors.navy,
+    backgroundColor: colors.gold,
     borderRadius: radius.full,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -654,7 +710,7 @@ const styles = StyleSheet.create({
   onboardBtnText: {
     ...typography.footnote,
     fontWeight: "700",
-    color: colors.textOnNavy,
+    color: colors.navy,
   },
   search: {
     ...typography.body,

@@ -1,21 +1,52 @@
-import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
-import { formatRole } from "@/src/lib/format";
-import { useAuth } from "@/src/lib/session";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Constants from "expo-constants";
+import { ProfileHero } from "@/src/components/profile/profile-hero";
 import {
-  Avatar,
-  PrimaryButton,
-  Screen,
-} from "@/src/components/ui";
-import { StatusPill } from "@/src/components/premium/controls";
-import { PremiumHeader, SectionHeader, SurfaceCard } from "@/src/components/premium/screen";
-import { colors, layout, radius, spacing, typography } from "@/src/theme/tokens";
+  ProfileInfoRow,
+  ProfileLinkRow,
+  ProfileSection,
+} from "@/src/components/profile/profile-section";
+import { ScreenErrorState, ScreenSkeleton } from "@/src/components/premium/states";
+import { api, ApiError, type UserRecord } from "@/src/lib/api";
+import { buildAssignmentView } from "@/src/lib/assignment";
+import { isAdmin, isHqUser, isLeadPastor } from "@/src/lib/auth";
+import { formatMemberSince } from "@/src/lib/format";
+import { useProfilePicture } from "@/src/hooks/use-profile-picture";
+import { useAuth } from "@/src/lib/session";
+import { colors, layout, spacing, typography } from "@/src/theme/tokens";
 
 export default function ProfileScreen() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, refreshUser } = useAuth();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const [profile, setProfile] = useState<UserRecord | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const loadProfile = useCallback(async () => {
+    setError(null);
+    try {
+      const me = await api.getMe();
+      setProfile(me);
+      await refreshUser();
+    } catch (err) {
+      setError(
+        err instanceof ApiError ? err.message : "Could not load your profile.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [refreshUser]);
+
+  useEffect(() => {
+    void loadProfile();
+  }, [loadProfile]);
+
+  const { uploading, previewUri, pickAndUpload } = useProfilePicture(loadProfile);
 
   async function onLogout() {
     setBusy(true);
@@ -27,96 +58,161 @@ export default function ProfileScreen() {
     }
   }
 
+  const assignment = buildAssignmentView(profile ?? user);
+  const appVersion = Constants.expoConfig?.version ?? "0.1.0";
+
+  const shortcuts = [
+    {
+      label: "Notifications",
+      onPress: () => router.push("/notifications" as never),
+    },
+    {
+      label: "Weekly reports",
+      onPress: () => router.navigate("/weekly" as never),
+    },
+    ...(!isHqUser(user)
+      ? [
+          {
+            label: "Library",
+            onPress: () => router.navigate("/library" as never),
+          },
+        ]
+      : []),
+    ...(isAdmin(user)
+      ? [
+          {
+            label: "Pastors",
+            onPress: () => router.navigate("/pastors" as never),
+          },
+        ]
+      : []),
+    ...(isLeadPastor(user)
+      ? [
+          {
+            label: "Summaries",
+            onPress: () => router.navigate("/summaries" as never),
+          },
+        ]
+      : []),
+  ];
+
   return (
-    <Screen padded={false}>
-      <View style={styles.root}>
-        <PremiumHeader
-          title="Your profile"
-          subtitle="Account and mobile access"
-          icon="person"
-        />
-        <SurfaceCard style={styles.identity} elevated>
-          <Avatar name={user?.name} imageUri={user?.profilePicUrl} size={72} />
-          <View style={styles.identityCopy}>
-            <Text style={styles.name}>{user?.name}</Text>
-            <Text style={styles.email}>{user?.email}</Text>
-            <StatusPill label={formatRole(user?.role)} tone="warning" />
-          </View>
-        </SurfaceCard>
+    <View style={styles.root}>
+      <ProfileHero
+        user={user}
+        title={assignment.title}
+        meta={assignment.meta}
+        topInset={insets.top}
+        imageUri={previewUri ?? profile?.profilePicUrl ?? user?.profilePicUrl}
+        uploading={uploading}
+        onPhotoPress={() => void pickAndUpload()}
+      />
+      <ScrollView
+        style={styles.flex}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: spacing.xxl + insets.bottom },
+        ]}
+      >
+        {loading && !profile ? <ScreenSkeleton /> : null}
+        {error && !profile ? (
+          <ScreenErrorState message={error} onRetry={() => void loadProfile()} />
+        ) : null}
 
-      <View style={styles.body}>
-        <SectionHeader title="Connection" />
-        <SurfaceCard style={styles.connection}>
-          <View>
-            <Text style={styles.connectionTitle}>JNLOP services</Text>
-            <Text style={styles.connectionBody}>Securely connected and ready</Text>
-          </View>
-          <StatusPill label="Online" tone="success" />
-        </SurfaceCard>
+        {profile ? (
+          <View style={styles.body}>
+            <ProfileSection title="Account">
+              <ProfileInfoRow label="Email" value={profile.email} />
+              {profile.phone ? (
+                <ProfileInfoRow label="Phone" value={profile.phone} />
+              ) : null}
+              <ProfileInfoRow
+                label="Member since"
+                value={formatMemberSince(profile.createdAt)}
+                last
+              />
+            </ProfileSection>
 
-        <View style={styles.signOut}>
-          <SectionHeader title="Session" />
-          <PrimaryButton
-            label="Sign out"
-            tone="danger"
-            loading={busy}
-            onPress={() => void onLogout()}
-          />
-        </View>
-      </View>
-      </View>
-    </Screen>
+            <ProfileSection title="Assignment">
+              <View style={styles.assignmentBody}>
+                <Text style={styles.assignmentTitle}>{assignment.title}</Text>
+                {assignment.meta ? (
+                  <Text style={styles.assignmentMeta}>{assignment.meta}</Text>
+                ) : null}
+                {assignment.footnote ? (
+                  <Text style={styles.assignmentFootnote}>
+                    {assignment.footnote}
+                  </Text>
+                ) : null}
+              </View>
+            </ProfileSection>
+
+            <ProfileSection title="App">
+              {shortcuts.map((item, index) => (
+                <ProfileLinkRow
+                  key={item.label}
+                  label={item.label}
+                  onPress={item.onPress}
+                  last={index === shortcuts.length - 1}
+                />
+              ))}
+            </ProfileSection>
+
+            <ProfileSection title="Session">
+              <ProfileLinkRow
+                label={busy ? "Signing out…" : "Sign out"}
+                onPress={() => void onLogout()}
+                destructive
+                last
+              />
+            </ProfileSection>
+
+            <Text style={styles.footer}>JNLOP · v{appVersion}</Text>
+          </View>
+        ) : null}
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    paddingHorizontal: layout.screenPad,
     backgroundColor: colors.bgBase,
   },
-  identity: {
-    flexDirection: "row",
-    gap: spacing.md,
-    alignItems: "center",
-    padding: spacing.md,
+  flex: {
+    flex: 1,
   },
-  identityCopy: { flex: 1, minWidth: 0, gap: spacing.xs },
-  name: {
-    ...typography.title2,
-    color: colors.navy,
-  },
-  email: {
-    ...typography.callout,
-    color: colors.textMuted,
-    marginTop: 2,
+  content: {
+    flexGrow: 1,
   },
   body: {
-    paddingTop: spacing.lg,
-    gap: spacing.sm,
+    paddingHorizontal: layout.screenPad,
+    gap: spacing.lg,
   },
-  connection: {
-    minHeight: 76,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.md,
+  assignmentBody: {
     padding: spacing.md,
+    gap: spacing.xs,
   },
-  connectionTitle: {
-    ...typography.bodyStrong,
-    color: colors.textPrimary,
+  assignmentTitle: {
+    ...typography.callout,
+    color: colors.navy,
+    fontWeight: "700",
   },
-  connectionBody: {
+  assignmentMeta: {
     ...typography.footnote,
     color: colors.textMuted,
-    marginTop: 2,
   },
-  signOut: {
-    gap: spacing.sm,
-    marginTop: spacing.lg,
-    padding: spacing.md,
-    borderRadius: radius.lg,
-    backgroundColor: colors.errorSoft,
+  assignmentFootnote: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginTop: spacing.xs,
+  },
+  footer: {
+    ...typography.caption,
+    color: colors.textMuted,
+    textAlign: "center",
+    marginTop: spacing.sm,
   },
 });

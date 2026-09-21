@@ -2,14 +2,26 @@ import Constants from "expo-constants";
 import {
   Role,
   UserStatus,
+  type FeedbackListResponse,
+  type FeedbackRecord,
   type HqDashboardResponse,
+  type PastorDashboardResponse,
+  type NationalSummaryResponse,
+  type NotificationListResponse,
+  type StateSummaryResponse,
+  type WeeklyReportInput,
+  type WeeklyReportListResponse,
+  type WeeklyReportRecord,
+  type ZoneSummaryResponse,
 } from "@repo/types";
 import {
   clearSession,
   getAccessToken,
   getRefreshToken,
+  getStoredUser,
   saveSession,
 } from "./auth";
+import { emitSessionExpired } from "./session-events";
 
 const API_URL =
   process.env.EXPO_PUBLIC_API_URL ??
@@ -25,6 +37,9 @@ export interface AuthUser {
   stateId: string | null;
   zoneId: string | null;
   branchId: string | null;
+  stateName?: string | null;
+  zoneName?: string | null;
+  branchName?: string | null;
   profilePicUrl?: string | null;
 }
 
@@ -45,6 +60,9 @@ export interface UserRecord {
   stateId: string | null;
   zoneId: string | null;
   branchId: string | null;
+  stateName?: string | null;
+  zoneName?: string | null;
+  branchName?: string | null;
   onboardingTokenExpiry: string | null;
   createdAt: string;
 }
@@ -97,7 +115,8 @@ export interface PastorFilters {
 export interface OrgBranch {
   id: string;
   name: string;
-  zoneId: string;
+  zoneId: string | null;
+  stateId?: string;
   address: string | null;
 }
 
@@ -112,6 +131,7 @@ export interface OrgState {
   id: string;
   name: string;
   zones: OrgZone[];
+  branches?: OrgBranch[];
 }
 
 export interface MonthlySummaryRecord {
@@ -176,7 +196,7 @@ function decodeBase64(input: string): string {
   return output;
 }
 
-function shouldRefreshAccessToken(token: string, skewSeconds = 60): boolean {
+function shouldRefreshAccessToken(token: string, skewSeconds = 300): boolean {
   try {
     const payload = JSON.parse(
       decodeBase64(token.split(".")[1] ?? ""),
@@ -189,6 +209,11 @@ function shouldRefreshAccessToken(token: string, skewSeconds = 60): boolean {
 }
 
 let refreshPromise: Promise<string | null> | null = null;
+
+async function expireSession(): Promise<void> {
+  await clearSession();
+  emitSessionExpired();
+}
 
 async function refreshAccessToken(): Promise<string | null> {
   if (refreshPromise) return refreshPromise;
@@ -203,8 +228,10 @@ async function refreshAccessToken(): Promise<string | null> {
       });
       await saveSession(session);
       return session.accessToken;
-    } catch {
-      await clearSession();
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        await expireSession();
+      }
       return null;
     }
   })().finally(() => {
@@ -251,6 +278,7 @@ async function rawRequest<T>(
     return res.json() as Promise<T>;
   } catch (err) {
     if (err instanceof ApiError) throw err;
+    if (err instanceof Error && err.name === "AbortError") throw err;
     throw new ApiError(
       "Can't reach the API from this browser. Sign in on Expo Go on your phone, or allow http://localhost:8081 on the API (CORS).",
       0,
@@ -268,6 +296,7 @@ async function request<T>(
   const accessToken = isPublic ? (token ?? null) : await resolveAccessToken(token);
 
   if (!isPublic && !accessToken) {
+    await expireSession();
     throw new ApiError("Session expired. Please sign in again.", 401);
   }
 
@@ -279,9 +308,37 @@ async function request<T>(
       if (nextToken) {
         return request<T>(path, options, nextToken, true);
       }
+      await expireSession();
       throw new ApiError("Session expired. Please sign in again.", 401);
     }
     throw err;
+  }
+}
+
+/** Refresh tokens on app launch or resume. Keeps cached user when offline. */
+export async function restoreSession(): Promise<AuthUser | null> {
+  const refreshToken = await getRefreshToken();
+  const stored = await getStoredUser();
+  if (!refreshToken || !stored) return null;
+
+  const accessToken = await getAccessToken();
+  if (accessToken && !shouldRefreshAccessToken(accessToken)) {
+    return stored;
+  }
+
+  try {
+    const session = await rawRequest<AuthResponse>("/auth/refresh", {
+      method: "POST",
+      body: JSON.stringify({ refreshToken }),
+    });
+    await saveSession(session);
+    return session.user;
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 401) {
+      await expireSession();
+      return null;
+    }
+    return stored;
   }
 }
 
@@ -342,6 +399,21 @@ export const api = {
     });
     return request<HqDashboardResponse>(
       `/dashboard/hq?${params.toString()}`,
+      { signal },
+    );
+  },
+
+  getPastorDashboard: (
+    weekOf: string,
+    weeks = 6,
+    signal?: AbortSignal,
+  ) => {
+    const params = new URLSearchParams({
+      weekOf,
+      weeks: String(weeks),
+    });
+    return request<PastorDashboardResponse>(
+      `/dashboard/pastor?${params.toString()}`,
       { signal },
     );
   },
@@ -410,7 +482,12 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
-  createBranch: (data: { name: string; zoneId: string; address?: string }) =>
+  createBranch: (data: {
+    name: string;
+    stateId: string;
+    zoneId?: string;
+    address?: string;
+  }) =>
     request<OrgBranch>("/org/branches", {
       method: "POST",
       body: JSON.stringify(data),
@@ -433,4 +510,86 @@ export const api = {
       `/summaries/monthly?${params.toString()}`,
     );
   },
+
+  createWeeklyReport: (data: WeeklyReportInput) =>
+    request<WeeklyReportRecord>("/reports/weekly", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  updateWeeklyReport: (id: string, data: Partial<WeeklyReportInput>) =>
+    request<WeeklyReportRecord>(`/reports/weekly/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  listWeeklyReports: (
+    filters: { weekOf?: string; page?: number; perPage?: number } = {},
+    signal?: AbortSignal,
+  ) => {
+    const params = new URLSearchParams();
+    if (filters.weekOf) params.set("weekOf", filters.weekOf);
+    if (filters.page) params.set("page", String(filters.page));
+    if (filters.perPage) params.set("perPage", String(filters.perPage));
+    const qs = params.toString();
+    return request<WeeklyReportListResponse>(
+      `/reports/weekly${qs ? `?${qs}` : ""}`,
+      { signal },
+    );
+  },
+
+  getWeeklyReport: (id: string, signal?: AbortSignal) =>
+    request<WeeklyReportRecord>(`/reports/weekly/${id}`, { signal }),
+
+  getZoneSummary: (weekOf: string, signal?: AbortSignal) =>
+    request<ZoneSummaryResponse>(
+      `/reports/zone/summary?weekOf=${encodeURIComponent(weekOf)}`,
+      { signal },
+    ),
+
+  forwardZoneReport: (weekOf: string) =>
+    request<ZoneSummaryResponse>(
+      `/reports/zone/${encodeURIComponent(weekOf)}/forward`,
+      { method: "POST" },
+    ),
+
+  getStateSummary: (weekOf: string, signal?: AbortSignal) =>
+    request<StateSummaryResponse>(
+      `/reports/state/summary?weekOf=${encodeURIComponent(weekOf)}`,
+      { signal },
+    ),
+
+  forwardStateReport: (weekOf: string) =>
+    request<StateSummaryResponse>(
+      `/reports/state/${encodeURIComponent(weekOf)}/forward`,
+      { method: "POST" },
+    ),
+
+  getNationalSummary: (weekOf: string, signal?: AbortSignal) =>
+    request<NationalSummaryResponse>(
+      `/reports/national/summary?weekOf=${encodeURIComponent(weekOf)}`,
+      { signal },
+    ),
+
+  listReportFeedback: (reportId: string, signal?: AbortSignal) =>
+    request<FeedbackListResponse>(`/reports/${reportId}/feedback`, { signal }),
+
+  createReportFeedback: (
+    reportId: string,
+    message: string,
+    replyToId?: string,
+  ) =>
+    request<FeedbackRecord>(`/reports/${reportId}/feedback`, {
+      method: "POST",
+      body: JSON.stringify({ message, ...(replyToId ? { replyToId } : {}) }),
+    }),
+
+  listNotifications: (signal?: AbortSignal) =>
+    request<NotificationListResponse>("/notifications", { signal }),
+
+  markNotificationRead: (notificationId: string) =>
+    request<{ id: string; readAt: string }>(
+      `/notifications/${notificationId}/read`,
+      { method: "PATCH" },
+    ),
 };

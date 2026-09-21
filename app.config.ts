@@ -22,6 +22,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
     package: "org.jnic.jnlop",
     predictiveBackGestureEnabled: false,
+    softwareKeyboardLayoutMode: "resize",
+  },
+  androidStatusBar: {
+    barStyle: "dark-content",
+    backgroundColor: "#F4F6FB",
   },
   web: {
     bundler: "metro",

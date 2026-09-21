@@ -1,6 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { StyleSheet, Text, View } from "react-native";
-import type { HqHomeNotification } from "@repo/types";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import type { NotificationRecord } from "@repo/types";
 import { colors, radius, spacing, typography } from "@/src/theme/tokens";
 
 function formatActivityDate(value: string) {
@@ -14,17 +14,32 @@ function formatActivityDate(value: string) {
 export function RecentActivity({
   items,
   unreadCount,
+  onItemPress,
+  onSeeAllPress,
 }: {
-  items: HqHomeNotification[];
+  items: NotificationRecord[];
   unreadCount: number;
+  onItemPress?: (item: NotificationRecord) => void;
+  onSeeAllPress?: () => void;
 }) {
   return (
     <View>
       <View style={styles.header}>
         <Text style={styles.section}>Recent activity</Text>
-        {unreadCount > 0 ? (
-          <Text style={styles.unread}>{unreadCount} unread</Text>
-        ) : null}
+        <View style={styles.headerRight}>
+          {unreadCount > 0 ? (
+            <Text style={styles.unread}>{unreadCount} unread</Text>
+          ) : null}
+          {onSeeAllPress ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={onSeeAllPress}
+              hitSlop={8}
+            >
+              <Text style={styles.seeAll}>See all</Text>
+            </Pressable>
+          ) : null}
+        </View>
       </View>
       <View style={styles.card}>
         {items.length === 0 ? (
@@ -38,30 +53,51 @@ export function RecentActivity({
             </Text>
           </View>
         ) : (
-          items.map((item, index) => (
-            <View
-              key={item.id}
-              accessible
-              accessibilityLabel={`${item.readAt ? "" : "Unread. "}${item.title}. ${item.body}`}
-              style={[styles.row, index < items.length - 1 && styles.divider]}
-            >
-              <View style={styles.timeline}>
-                <View style={[styles.dot, !item.readAt && styles.dotUnread]} />
-                {index < items.length - 1 ? <View style={styles.line} /> : null}
-              </View>
-              <View style={styles.copy}>
-                <View style={styles.titleRow}>
-                  <Text style={styles.title} numberOfLines={1}>
-                    {item.title}
-                  </Text>
-                  <Text style={styles.date}>{formatActivityDate(item.createdAt)}</Text>
+          items.map((item, index) => {
+            const row = (
+              <>
+                <View style={styles.timeline}>
+                  <View style={[styles.dot, !item.readAt && styles.dotUnread]} />
+                  {index < items.length - 1 ? <View style={styles.line} /> : null}
                 </View>
-                <Text style={styles.body} numberOfLines={2}>
-                  {item.body}
-                </Text>
+                <View style={styles.copy}>
+                  <View style={styles.titleRow}>
+                    <Text style={styles.title} numberOfLines={1}>
+                      {item.title}
+                    </Text>
+                    <Text style={styles.date}>{formatActivityDate(item.createdAt)}</Text>
+                  </View>
+                  <Text style={styles.body} numberOfLines={2}>
+                    {item.body}
+                  </Text>
+                </View>
+              </>
+            );
+            return onItemPress ? (
+              <Pressable
+                key={item.id}
+                accessibilityRole="button"
+                accessibilityLabel={`${item.readAt ? "" : "Unread. "}${item.title}. ${item.body}`}
+                onPress={() => onItemPress(item)}
+                style={({ pressed }) => [
+                  styles.row,
+                  index < items.length - 1 && styles.divider,
+                  pressed && { opacity: 0.85 },
+                ]}
+              >
+                {row}
+              </Pressable>
+            ) : (
+              <View
+                key={item.id}
+                accessible
+                accessibilityLabel={`${item.readAt ? "" : "Unread. "}${item.title}. ${item.body}`}
+                style={[styles.row, index < items.length - 1 && styles.divider]}
+              >
+                {row}
               </View>
-            </View>
-          ))
+            );
+          })
         )}
       </View>
     </View>
@@ -74,6 +110,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: spacing.sm,
+  },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  seeAll: {
+    ...typography.caption,
+    color: colors.gold,
+    fontWeight: "700",
   },
   section: {
     ...typography.overline,

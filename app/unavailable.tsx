@@ -43,9 +43,9 @@ export default function UnavailableScreen() {
         <Ionicons name="shield-checkmark" size={26} color={colors.gold} />
       </View>
       <StatusPill label="Leadership access" tone="warning" />
-      <Text style={styles.title}>This mobile workspace is built for HQ</Text>
+      <Text style={styles.title}>This workspace is not available</Text>
       <Text style={styles.body}>
-        Branch, zonal, and state reporting currently stays on the web app.
+        Sign out and try another account if you reached this screen by mistake.
       </Text>
       <SurfaceCard style={styles.identity}>
         <Text style={styles.name}>{user?.name}</Text>

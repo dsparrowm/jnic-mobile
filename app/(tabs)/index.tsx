@@ -1,7 +1,8 @@
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { useCallback } from "react";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Role, type HqHomeTaskKind } from "@repo/types";
+import { Role, type HqHomeTaskKind, type NotificationRecord } from "@repo/types";
 import { AttentionList } from "@/src/components/home/attention-list";
 import { AttendanceTrend } from "@/src/components/home/attendance-trend";
 import { HomeHero } from "@/src/components/home/home-hero";
@@ -11,19 +12,23 @@ import {
   HomeSkeleton,
   RefreshErrorBanner,
 } from "@/src/components/home/home-states";
+import { PastorHome } from "@/src/components/home/pastor-home";
 import { RecentActivity } from "@/src/components/home/recent-activity";
 import { WeeklyHealthCard } from "@/src/components/home/weekly-health-card";
+import { NotificationBell } from "@/src/components/notifications/notification-bell";
 import { useHomeDashboard } from "@/src/hooks/use-home-dashboard";
+import { api } from "@/src/lib/api";
+import { openNotificationTarget } from "@/src/lib/notifications";
 import { useAuth } from "@/src/lib/session";
 import { colors, layout, spacing } from "@/src/theme/tokens";
 
-const TASK_ROUTES: Record<HqHomeTaskKind, "/pastors" | "/summaries" | "/approvals"> = {
+const TASK_ROUTES: Record<HqHomeTaskKind, "/pastors" | "/weekly" | "/approvals"> = {
   PENDING_ONBOARDING: "/pastors",
-  MISSED_REPORTS: "/summaries",
+  MISSED_REPORTS: "/weekly",
   PENDING_SUMMARY_APPROVALS: "/approvals",
 };
 
-export default function HomeScreen() {
+function HqHome() {
   const { user } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -38,7 +43,7 @@ export default function HomeScreen() {
   } = useHomeDashboard();
 
   const openPrimaryAction = () => {
-    const route = data?.role === Role.LEAD_PASTOR ? "/approvals" : "/summaries";
+    const route = data?.role === Role.LEAD_PASTOR ? "/approvals" : "/weekly";
     router.navigate(route as never);
   };
 
@@ -46,9 +51,47 @@ export default function HomeScreen() {
     router.navigate(TASK_ROUTES[kind] as never);
   };
 
+  const openNotifications = () => router.push("/notifications" as never);
+
+  const openNotification = useCallback(
+    async (item: NotificationRecord) => {
+      if (!item.readAt) {
+        try {
+          await api.markNotificationRead(item.id);
+          void refresh();
+        } catch {
+          // Non-blocking — still open the linked screen.
+        }
+      }
+      openNotificationTarget(item, (href) => router.navigate(href as never));
+    },
+    [refresh, router],
+  );
+
   return (
     <View style={styles.root}>
+      <HomeHero
+        user={user}
+        tone="light"
+        branchName={
+          user?.role === Role.LEAD_PASTOR ? "Lead Pastor" : "Headquarters"
+        }
+        location={
+          data?.weekLabel
+            ? `Week ending ${data.weekLabel}`
+            : "National operations"
+        }
+        topInset={insets.top}
+        trailing={
+          <NotificationBell
+            unreadCount={data?.recentActivity.unreadCount ?? 0}
+            onPress={openNotifications}
+            tone="light"
+          />
+        }
+      />
       <ScrollView
+        style={styles.flex}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
@@ -60,12 +103,6 @@ export default function HomeScreen() {
           />
         }
       >
-        <HomeHero
-          user={user}
-          weekLabel={data?.weekLabel}
-          topInset={insets.top}
-        />
-
         <View style={styles.sheet}>
           {loading && !data ? <HomeSkeleton /> : null}
           {error && !data ? (
@@ -85,6 +122,8 @@ export default function HomeScreen() {
               <RecentActivity
                 items={data.recentActivity.items}
                 unreadCount={data.recentActivity.unreadCount}
+                onItemPress={(item) => void openNotification(item)}
+                onSeeAllPress={openNotifications}
               />
             </>
           ) : null}
@@ -94,17 +133,28 @@ export default function HomeScreen() {
   );
 }
 
+export default function HomeScreen() {
+  const { user, isHq } = useAuth();
+  if (user && !isHq) {
+    return <PastorHome user={user} />;
+  }
+  return <HqHome />;
+}
+
 const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.bgBase,
   },
+  flex: {
+    flex: 1,
+  },
   scrollContent: {
     paddingBottom: spacing.xxl,
   },
   sheet: {
-    marginTop: -24,
     paddingHorizontal: layout.screenPad,
+    paddingTop: spacing.md,
     gap: spacing.md,
   },
 });

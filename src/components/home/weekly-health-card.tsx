@@ -15,7 +15,7 @@ export function WeeklyHealthCard({
   const hasCoverage = total > 0;
   const isHealthy = missed === 0;
   const action =
-    dashboard.role === Role.ADMIN ? "View summaries" : "Open approvals";
+    dashboard.role === Role.ADMIN ? "Open weekly reports" : "Open approvals";
 
   return (
     <View style={[styles.card, shadow.soft]}>

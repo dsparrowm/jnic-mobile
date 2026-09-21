@@ -92,7 +92,7 @@ export default function SummariesScreen() {
                 setRefreshing(true);
                 void load();
               }}
-              tintColor={colors.navy}
+              tintColor={colors.gold}
             />
           }
           ListEmptyComponent={

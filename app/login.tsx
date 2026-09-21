@@ -1,17 +1,17 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Image,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { useRouter } from "expo-router";
 import { ApiError } from "@/src/lib/api";
 import { useAuth } from "@/src/lib/session";
 import { Field, PrimaryButton } from "@/src/components/ui";
@@ -19,28 +19,80 @@ import { colors, spacing, typography } from "@/src/theme/tokens";
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
-  const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
+  const windowHeightRef = useRef(windowHeight);
+  const keyboardTopRef = useRef<number | null>(null);
+  const mountedRef = useRef(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [keyboardOverlap, setKeyboardOverlap] = useState(0);
+
+  windowHeightRef.current = windowHeight;
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    const applyOverlap = () => {
+      if (!mountedRef.current) return;
+      const keyboardTop = keyboardTopRef.current;
+      const next =
+        keyboardTop == null
+          ? 0
+          : Math.max(0, windowHeightRef.current - keyboardTop);
+      setKeyboardOverlap((current) => (current === next ? current : next));
+    };
+
+    const showEvent =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent =
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const show = Keyboard.addListener(showEvent, (event) => {
+      const { height, screenY } = event.endCoordinates;
+      keyboardTopRef.current =
+        screenY > 0 ? screenY : Math.max(0, windowHeightRef.current - height);
+      setTimeout(applyOverlap, 0);
+    });
+    const hide = Keyboard.addListener(hideEvent, () => {
+      keyboardTopRef.current = null;
+      setTimeout(applyOverlap, 0);
+    });
+
+    return () => {
+      mountedRef.current = false;
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (keyboardTopRef.current == null) return;
+    const timer = setTimeout(() => {
+      if (!mountedRef.current || keyboardTopRef.current == null) return;
+      const next = Math.max(0, windowHeight - keyboardTopRef.current);
+      setKeyboardOverlap((current) => (current === next ? current : next));
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [windowHeight]);
 
   async function onSubmit() {
     setError(null);
     setSubmitting(true);
     try {
       await signIn(email.trim(), password);
-      router.replace("/");
     } catch (err) {
+      if (!mountedRef.current) return;
       const message =
         err instanceof ApiError
           ? err.message
           : "Unable to sign in. Check your connection and try again.";
       setError(message);
     } finally {
-      setSubmitting(false);
+      if (mountedRef.current) setSubmitting(false);
     }
   }
 
@@ -53,20 +105,21 @@ export default function LoginScreen() {
       <View style={styles.orbMid} />
       <View style={styles.orbGold} />
 
-      <KeyboardAvoidingView
+      <ScrollView
         style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
       >
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={[
-            styles.scroll,
+        <View
+          style={[
+            styles.stage,
             {
-              paddingTop: insets.top + spacing.xl,
-              paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing.md,
+              paddingTop: insets.top + spacing.sm,
+              paddingBottom: spacing.lg + spacing.xxl * 2,
             },
           ]}
-          showsVerticalScrollIndicator={false}
         >
           <View style={styles.brandBlock}>
             <Image
@@ -131,8 +184,9 @@ export default function LoginScreen() {
               disabled={!canSubmit}
             />
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </View>
+        <View style={{ height: keyboardOverlap }} />
+      </ScrollView>
     </View>
   );
 }
@@ -145,8 +199,11 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   scroll: {
     flexGrow: 1,
-    paddingHorizontal: spacing.lg,
+  },
+  stage: {
+    flexGrow: 1,
     justifyContent: "center",
+    paddingHorizontal: spacing.lg,
   },
   orbTop: {
     position: "absolute",

@@ -123,7 +123,7 @@ export default function ApprovalsScreen() {
                 setRefreshing(true);
                 void load();
               }}
-              tintColor={colors.navy}
+              tintColor={colors.gold}
             />
           }
           ListHeaderComponent={

@@ -1,11 +1,18 @@
 import { StyleSheet, Text, View } from "react-native";
-import type { HqHomeAttendancePoint } from "@repo/types";
 import { colors, radius, spacing, typography } from "@/src/theme/tokens";
+
+type TrendPoint = {
+  weekOf: string;
+  weekLabel: string;
+  total: number;
+};
 
 export function AttendanceTrend({
   points,
+  subtitle = "All nationally submitted reports",
 }: {
-  points: HqHomeAttendancePoint[];
+  points: TrendPoint[];
+  subtitle?: string;
 }) {
   const max = Math.max(...points.map((point) => point.total), 0);
   const latest = points.at(-1)?.total ?? 0;
@@ -25,7 +32,7 @@ export function AttendanceTrend({
       <View style={styles.header}>
         <View>
           <Text style={styles.section}>Attendance trend</Text>
-          <Text style={styles.subtitle}>All nationally submitted reports</Text>
+          <Text style={styles.subtitle}>{subtitle}</Text>
         </View>
         {points.length > 1 ? (
           <Text style={[styles.change, change < 0 && styles.changeDown]}>

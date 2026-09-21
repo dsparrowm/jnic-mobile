@@ -16,7 +16,7 @@ export const colors = {
   goldSoft: "rgba(201, 160, 80, 0.16)",
   goldGlow: "rgba(201, 160, 80, 0.14)",
   goldBorder: "rgba(201, 160, 80, 0.35)",
-  goldForeground: "#FFFFFF",
+  goldForeground: "#0D1B3E",
   border: "#E5E7EB",
   borderSubtle: "#EEF0F4",
   success: "#16A34A",

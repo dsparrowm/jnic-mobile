@@ -66,10 +66,6 @@ export default function OrgScreen() {
         if (prev) return prev;
         return data[0]?.id || "";
       });
-      setBranchZoneId((prev) => {
-        if (prev) return prev;
-        return data[0]?.zones[0]?.id || "";
-      });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to load org tree");
     } finally {
@@ -128,13 +124,14 @@ export default function OrgScreen() {
         }
         await api.createZone({ name: zoneName.trim(), stateId: zoneStateId });
       } else if (createKind === "branch") {
-        if (!branchName.trim() || !branchZoneId) {
-          setFormError("Branch name and zone are required.");
+        if (!branchName.trim() || !branchStateId) {
+          setFormError("Branch name and state are required.");
           return;
         }
         await api.createBranch({
           name: branchName.trim(),
-          zoneId: branchZoneId,
+          stateId: branchStateId,
+          zoneId: branchZoneId || undefined,
           address: branchAddress.trim() || undefined,
         });
       }
@@ -187,7 +184,8 @@ export default function OrgScreen() {
                 setRefreshing(true);
                 void load();
               }}
-              tintColor={colors.navy}
+              tintColor={colors.gold}
+              colors={[colors.gold]}
             />
           }
           contentContainerStyle={{ paddingBottom: spacing.xl }}
@@ -220,8 +218,9 @@ export default function OrgScreen() {
                   </View>
                   <Text style={styles.count}>{state.zones.length} zones</Text>
                 </Pressable>
-                {open
-                  ? state.zones.map((zone) => {
+                {open ? (
+                  <>
+                  {state.zones.map((zone) => {
                       const zoneOpen = expandedZones[zone.id] ?? false;
                       return (
                         <View key={zone.id} style={styles.zoneBlock}>
@@ -262,8 +261,20 @@ export default function OrgScreen() {
                             : null}
                         </View>
                       );
-                    })
-                  : null}
+                    })}
+                  {(state.branches ?? []).map((branch) => (
+                    <View key={branch.id} style={styles.branchRow}>
+                      <Ionicons
+                        name="location-outline"
+                        size={15}
+                        color={colors.gold}
+                      />
+                      <Text style={styles.branchName}>{branch.name}</Text>
+                      <Text style={styles.count}>No zone</Text>
+                    </View>
+                  ))}
+                  </>
+                ) : null}
               </View>
             );
           })}
@@ -353,13 +364,18 @@ export default function OrgScreen() {
                     active={branchStateId === s.id}
                     onPress={() => {
                       setBranchStateId(s.id);
-                      setBranchZoneId(s.zones[0]?.id ?? "");
+                      setBranchZoneId("");
                     }}
                   />
                 ))}
               </ChipRow>
-              <Text style={styles.label}>Zone</Text>
+              <Text style={styles.label}>Zone (optional)</Text>
               <ChipRow>
+                <Chip
+                  label="No zone"
+                  active={!branchZoneId}
+                  onPress={() => setBranchZoneId("")}
+                />
                 {zonesForBranch.map((z) => (
                   <Chip
                     key={z.id}

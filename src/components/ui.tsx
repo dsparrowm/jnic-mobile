@@ -98,6 +98,7 @@ export function Field({
           onBlur?.(event);
         }}
         {...props}
+        accessibilityLabel={props.accessibilityLabel ?? label}
       />
     </View>
   );
@@ -118,6 +119,7 @@ export function PrimaryButton({
 }) {
   const bg =
     tone === "navy" ? colors.navy : tone === "danger" ? colors.error : colors.gold;
+  const fg = tone === "gold" ? colors.goldForeground : colors.textOnNavy;
   return (
     <Pressable
       accessibilityRole="button"
@@ -133,9 +135,9 @@ export function PrimaryButton({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={colors.goldForeground} />
+        <ActivityIndicator color={fg} />
       ) : (
-        <Text style={styles.primaryBtnText}>{label}</Text>
+        <Text style={[styles.primaryBtnText, { color: fg }]}>{label}</Text>
       )}
     </Pressable>
   );
@@ -372,7 +374,6 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: {
     ...typography.bodyStrong,
-    color: colors.goldForeground,
   },
   ghostBtn: {
     borderRadius: radius.md,
