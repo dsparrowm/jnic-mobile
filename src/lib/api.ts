@@ -308,6 +308,29 @@ export const api = {
 
   getMe: () => request<UserRecord>("/users/me"),
 
+  presignProfilePicture: (data: {
+    contentType: "image/jpeg" | "image/png";
+    fileSize: number;
+  }) =>
+    request<{
+      uploadUrl: string;
+      key: string;
+      publicUrl: string;
+      expiresIn: number;
+      apiKey: string;
+      timestamp: number;
+      signature: string;
+    }>("/files/profile-picture/presign", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  updateProfilePicture: (data: { key: string }) =>
+    request<UserRecord>("/users/me/profile-picture", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
   getHqDashboard: (
     weekOf: string,
     weeks = 6,
