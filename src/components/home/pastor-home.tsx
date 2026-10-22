@@ -1,6 +1,6 @@
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
-import { useCallback, useEffect } from "react";
-import { useRouter } from "expo-router";
+import { useCallback, useEffect, useRef } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NotificationRecord } from "@repo/types";
 import { AttendanceTrend } from "@/src/components/home/attendance-trend";
@@ -17,7 +17,10 @@ import { ReportNudgeBanner } from "@/src/components/home/report-nudge-banner";
 import { StateActionNudge } from "@/src/components/home/state-action-nudge";
 import { StateZoneAttention } from "@/src/components/home/state-zone-attention";
 import { ZoneActionNudge } from "@/src/components/home/zone-action-nudge";
-import { ScopeHomeMetrics, ZoneHomeMetrics } from "@/src/components/home/zone-home-metrics";
+import {
+  ScopeHomeMetrics,
+  ZoneHomeMetrics,
+} from "@/src/components/home/zone-home-metrics";
 import { NotificationBell } from "@/src/components/notifications/notification-bell";
 import { ExceptionCard } from "@/src/components/weekly/exceptions";
 import { usePastorHome } from "@/src/hooks/use-pastor-home";
@@ -33,11 +36,20 @@ export function PastorHome({ user }: { user: AuthUser }) {
   const { refreshUser } = useAuth();
   const { data, loading, refreshing, error, refreshError, refresh, retry } =
     usePastorHome(user);
+  const firstFocus = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (firstFocus.current) {
+        firstFocus.current = false;
+        return;
+      }
+      void refresh();
+    }, [refresh]),
+  );
   const canSubmit = canSubmitWeekly(user);
   const zonal = isZonalPastor(user);
   const statePastor = isStatePastor(user);
-  const branchName =
-    data?.branch?.name ?? user.branchName ?? null;
+  const branchName = data?.branch?.name ?? user.branchName ?? null;
   const branchLocation = [data?.branch?.zoneName, data?.branch?.stateName]
     .filter(Boolean)
     .join(" · ");
@@ -87,9 +99,9 @@ export function PastorHome({ user }: { user: AuthUser }) {
   );
 
   const heroSubtitle = statePastor
-    ? data?.state?.state.name ?? user.stateName ?? null
+    ? (data?.state?.state.name ?? user.stateName ?? null)
     : zonal
-      ? data?.zone?.zone.name ?? user.zoneName ?? branchName
+      ? (data?.zone?.zone.name ?? user.zoneName ?? branchName)
       : branchName;
 
   const heroLocation = statePastor
@@ -142,7 +154,9 @@ export function PastorHome({ user }: { user: AuthUser }) {
 
           {data ? (
             <>
-              {refreshError ? <RefreshErrorBanner message={refreshError} /> : null}
+              {refreshError ? (
+                <RefreshErrorBanner message={refreshError} />
+              ) : null}
 
               {data.zone ? (
                 <>
@@ -181,7 +195,10 @@ export function PastorHome({ user }: { user: AuthUser }) {
                     attendance={data.state.totals.attendance}
                     finance={data.state.totals.finance}
                   />
-                  <StateZoneAttention state={data.state} onPress={openReports} />
+                  <StateZoneAttention
+                    state={data.state}
+                    onPress={openReports}
+                  />
                   {(data.stateAttendanceTrend ?? []).length > 0 ? (
                     <AttendanceTrend
                       points={data.stateAttendanceTrend ?? []}
@@ -213,7 +230,9 @@ export function PastorHome({ user }: { user: AuthUser }) {
                     points={data.attendanceTrend}
                     subtitle={branchTrendSubtitle}
                   />
-                  {data.month ? <BranchMonthSnapshot month={data.month} /> : null}
+                  {data.month ? (
+                    <BranchMonthSnapshot month={data.month} />
+                  ) : null}
                 </>
               ) : null}
 

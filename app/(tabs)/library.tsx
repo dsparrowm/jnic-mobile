@@ -2,7 +2,13 @@ import { StyleSheet, Text, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Screen } from "@/src/components/ui";
 import { PremiumHeader, SurfaceCard } from "@/src/components/premium/screen";
-import { colors, layout, radius, spacing, typography } from "@/src/theme/tokens";
+import {
+  colors,
+  layout,
+  radius,
+  spacing,
+  typography,
+} from "@/src/theme/tokens";
 
 export default function LibraryScreen() {
   return (
@@ -16,7 +22,7 @@ export default function LibraryScreen() {
         />
         <SurfaceCard style={styles.card} elevated>
           <View style={styles.iconWell}>
-            <Ionicons name="book-outline" size={28} color={colors.gold} />
+            <Ionicons name="book-outline" size={28} color={colors.goldText} />
           </View>
           <Text style={styles.badge}>Coming soon</Text>
           <Text style={styles.title}>Gospel sermons and books</Text>
@@ -53,7 +59,7 @@ const styles = StyleSheet.create({
   },
   badge: {
     ...typography.overline,
-    color: colors.gold,
+    color: colors.goldText,
   },
   title: {
     ...typography.title3,

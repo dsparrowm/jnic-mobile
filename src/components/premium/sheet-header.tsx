@@ -1,6 +1,5 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, radius, spacing, typography } from "@/src/theme/tokens";
 
 export function SheetHeader({
@@ -14,9 +13,8 @@ export function SheetHeader({
   onClose: () => void;
   closeDisabled?: boolean;
 }) {
-  const insets = useSafeAreaInsets();
   return (
-    <View style={[styles.wrap, { paddingTop: insets.top + spacing.sm }]}>
+    <View style={styles.wrap}>
       <View style={styles.handle} />
       <View style={styles.row}>
         <View style={styles.copy}>

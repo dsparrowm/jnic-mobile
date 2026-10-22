@@ -2,8 +2,18 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { ActivityIndicator, Platform, View } from "react-native";
+import { useFonts } from "expo-font";
+import * as SplashScreen from "expo-splash-screen";
+import {
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+} from "@expo-google-fonts/plus-jakarta-sans";
 import { AuthProvider, useAuth } from "@/src/lib/session";
 import { colors } from "@/src/theme/tokens";
+
+void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 function PhonePreview({ children }: { children: React.ReactNode }) {
   if (Platform.OS !== "web") return <>{children}</>;
@@ -69,6 +79,22 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts({
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+  });
+  const fontsReady = fontsLoaded || Boolean(fontError);
+
+  useEffect(() => {
+    if (fontsReady) {
+      void SplashScreen.hideAsync().catch(() => undefined);
+    }
+  }, [fontsReady]);
+
+  if (!fontsReady) return null;
+
   return (
     <AuthProvider>
       <StatusBar style="dark" />

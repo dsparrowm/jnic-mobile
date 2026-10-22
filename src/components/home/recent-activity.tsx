@@ -45,7 +45,11 @@ export function RecentActivity({
         {items.length === 0 ? (
           <View style={styles.empty}>
             <View style={styles.emptyIcon}>
-              <Ionicons name="notifications-outline" size={20} color={colors.textMuted} />
+              <Ionicons
+                name="notifications-outline"
+                size={20}
+                color={colors.textMuted}
+              />
             </View>
             <Text style={styles.emptyTitle}>No recent activity</Text>
             <Text style={styles.emptyBody}>
@@ -57,15 +61,21 @@ export function RecentActivity({
             const row = (
               <>
                 <View style={styles.timeline}>
-                  <View style={[styles.dot, !item.readAt && styles.dotUnread]} />
-                  {index < items.length - 1 ? <View style={styles.line} /> : null}
+                  <View
+                    style={[styles.dot, !item.readAt && styles.dotUnread]}
+                  />
+                  {index < items.length - 1 ? (
+                    <View style={styles.line} />
+                  ) : null}
                 </View>
                 <View style={styles.copy}>
                   <View style={styles.titleRow}>
                     <Text style={styles.title} numberOfLines={1}>
                       {item.title}
                     </Text>
-                    <Text style={styles.date}>{formatActivityDate(item.createdAt)}</Text>
+                    <Text style={styles.date}>
+                      {formatActivityDate(item.createdAt)}
+                    </Text>
                   </View>
                   <Text style={styles.body} numberOfLines={2}>
                     {item.body}
@@ -118,7 +128,7 @@ const styles = StyleSheet.create({
   },
   seeAll: {
     ...typography.caption,
-    color: colors.gold,
+    color: colors.goldText,
     fontWeight: "700",
   },
   section: {

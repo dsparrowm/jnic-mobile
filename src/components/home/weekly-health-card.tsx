@@ -1,7 +1,13 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Role, type HqDashboardResponse } from "@repo/types";
-import { colors, radius, shadow, spacing, typography } from "@/src/theme/tokens";
+import {
+  colors,
+  radius,
+  shadow,
+  spacing,
+  typography,
+} from "@/src/theme/tokens";
 
 export function WeeklyHealthCard({
   dashboard,
@@ -41,9 +47,21 @@ export function WeeklyHealthCard({
           ]}
         >
           <Ionicons
-            name={!hasCoverage ? "time" : isHealthy ? "checkmark-circle" : "alert-circle"}
+            name={
+              !hasCoverage
+                ? "time"
+                : isHealthy
+                  ? "checkmark-circle"
+                  : "alert-circle"
+            }
             size={16}
-            color={!hasCoverage ? colors.info : isHealthy ? colors.success : colors.warning}
+            color={
+              !hasCoverage
+                ? colors.info
+                : isHealthy
+                  ? colors.success
+                  : colors.warning
+            }
           />
           <Text
             style={[
@@ -57,7 +75,11 @@ export function WeeklyHealthCard({
               },
             ]}
           >
-            {!hasCoverage ? "Awaiting data" : isHealthy ? "On track" : `${missed} missed`}
+            {!hasCoverage
+              ? "Awaiting data"
+              : isHealthy
+                ? "On track"
+                : `${missed} missed`}
           </Text>
         </View>
       </View>
@@ -66,7 +88,12 @@ export function WeeklyHealthCard({
         accessible
         accessibilityRole="progressbar"
         accessibilityLabel="Weekly report coverage"
-        accessibilityValue={{ min: 0, max: 100, now: percent, text: `${percent}%` }}
+        accessibilityValue={{
+          min: 0,
+          max: 100,
+          now: percent,
+          text: `${percent}%`,
+        }}
         style={styles.progressTrack}
       >
         <View style={[styles.progressFill, { width: `${percent}%` }]} />
@@ -80,10 +107,13 @@ export function WeeklyHealthCard({
         accessibilityRole="button"
         accessibilityLabel={action}
         onPress={onPress}
-        style={({ pressed }) => [styles.action, pressed && styles.actionPressed]}
+        style={({ pressed }) => [
+          styles.action,
+          pressed && styles.actionPressed,
+        ]}
       >
         <Text style={styles.actionText}>{action}</Text>
-        <Ionicons name="arrow-forward" size={16} color={colors.gold} />
+        <Ionicons name="arrow-forward" size={16} color={colors.goldText} />
       </Pressable>
     </View>
   );

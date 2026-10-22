@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
-  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -23,8 +22,15 @@ import {
 import { StatusPill } from "@/src/components/premium/controls";
 import { PremiumHeader } from "@/src/components/premium/screen";
 import { InlineNotice, ScreenSkeleton } from "@/src/components/premium/states";
+import { BottomSheet } from "@/src/components/premium/bottom-sheet";
 import { SheetHeader } from "@/src/components/premium/sheet-header";
-import { colors, layout, radius, spacing, typography } from "@/src/theme/tokens";
+import {
+  colors,
+  layout,
+  radius,
+  spacing,
+  typography,
+} from "@/src/theme/tokens";
 
 type CreateKind = "state" | "zone" | "branch" | null;
 
@@ -67,7 +73,9 @@ export default function OrgScreen() {
         return data[0]?.id || "";
       });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to load org tree");
+      setError(
+        err instanceof ApiError ? err.message : "Failed to load org tree",
+      );
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -94,21 +102,25 @@ export default function OrgScreen() {
       setCreateKind(null);
       return;
     }
-    Alert.alert("Discard changes?", "The organisation details you entered will be lost.", [
-      { text: "Keep editing", style: "cancel" },
-      {
-        text: "Discard",
-        style: "destructive",
-        onPress: () => {
-          setCreateKind(null);
-          setZoneName("");
-          setBranchName("");
-          setBranchAddress("");
-          setStateName(NIGERIAN_STATES[0] ?? "");
-          setFormError(null);
+    Alert.alert(
+      "Discard changes?",
+      "The organisation details you entered will be lost.",
+      [
+        { text: "Keep editing", style: "cancel" },
+        {
+          text: "Discard",
+          style: "destructive",
+          onPress: () => {
+            setCreateKind(null);
+            setZoneName("");
+            setBranchName("");
+            setBranchAddress("");
+            setStateName(NIGERIAN_STATES[0] ?? "");
+            setFormError(null);
+          },
         },
-      },
-    ]);
+      ],
+    );
   }
 
   async function submitCreate() {
@@ -157,10 +169,16 @@ export default function OrgScreen() {
         right={<StatusPill label={`${tree.length} states`} tone="warning" />}
       />
       <ChipRow>
-        <Pressable style={styles.primaryChip} onPress={() => openCreate("state")}>
+        <Pressable
+          style={styles.primaryChip}
+          onPress={() => openCreate("state")}
+        >
           <Text style={styles.primaryChipText}>+ State</Text>
         </Pressable>
-        <Pressable style={styles.secondaryChip} onPress={() => openCreate("zone")}>
+        <Pressable
+          style={styles.secondaryChip}
+          onPress={() => openCreate("zone")}
+        >
           <Text style={styles.secondaryChipText}>+ Zone</Text>
         </Pressable>
         <Pressable
@@ -220,7 +238,7 @@ export default function OrgScreen() {
                 </Pressable>
                 {open ? (
                   <>
-                  {state.zones.map((zone) => {
+                    {state.zones.map((zone) => {
                       const zoneOpen = expandedZones[zone.id] ?? false;
                       return (
                         <View key={zone.id} style={styles.zoneBlock}>
@@ -237,7 +255,9 @@ export default function OrgScreen() {
                           >
                             <View style={styles.nodeLabel}>
                               <Ionicons
-                                name={zoneOpen ? "chevron-down" : "chevron-forward"}
+                                name={
+                                  zoneOpen ? "chevron-down" : "chevron-forward"
+                                }
                                 size={15}
                                 color={colors.textPrimary}
                               />
@@ -253,26 +273,28 @@ export default function OrgScreen() {
                                   <Ionicons
                                     name="location-outline"
                                     size={15}
-                                    color={colors.gold}
+                                    color={colors.goldText}
                                   />
-                                  <Text style={styles.branchName}>{branch.name}</Text>
+                                  <Text style={styles.branchName}>
+                                    {branch.name}
+                                  </Text>
                                 </View>
                               ))
                             : null}
                         </View>
                       );
                     })}
-                  {(state.branches ?? []).map((branch) => (
-                    <View key={branch.id} style={styles.branchRow}>
-                      <Ionicons
-                        name="location-outline"
-                        size={15}
-                        color={colors.gold}
-                      />
-                      <Text style={styles.branchName}>{branch.name}</Text>
-                      <Text style={styles.count}>No zone</Text>
-                    </View>
-                  ))}
+                    {(state.branches ?? []).map((branch) => (
+                      <View key={branch.id} style={styles.branchRow}>
+                        <Ionicons
+                          name="location-outline"
+                          size={15}
+                          color={colors.goldText}
+                        />
+                        <Text style={styles.branchName}>{branch.name}</Text>
+                        <Text style={styles.count}>No zone</Text>
+                      </View>
+                    ))}
                   </>
                 ) : null}
               </View>
@@ -281,139 +303,137 @@ export default function OrgScreen() {
         </ScrollView>
       )}
 
-      <Modal
+      <BottomSheet
         visible={createKind !== null}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={requestCloseCreate}
+        onClose={requestCloseCreate}
+        scrollable
       >
-        <ScrollView
-          style={styles.modalRoot}
-          contentContainerStyle={{ padding: spacing.lg, paddingBottom: 48 }}
-        >
-          <SheetHeader
-            title={`Create ${
-              createKind === "state"
-                ? "state"
-                : createKind === "zone"
-                  ? "zone"
-                  : "branch"
-            }`}
-            subtitle="Add a new unit to the JNIC hierarchy."
-            onClose={requestCloseCreate}
-            closeDisabled={busy}
-          />
+        <SheetHeader
+          title={`Create ${
+            createKind === "state"
+              ? "state"
+              : createKind === "zone"
+                ? "zone"
+                : "branch"
+          }`}
+          subtitle="Add a new unit to the JNIC hierarchy."
+          onClose={requestCloseCreate}
+          closeDisabled={busy}
+        />
 
-          {createKind === "state" ? (
-            <>
-              <Text style={styles.label}>Nigerian state</Text>
-              <ScrollView style={{ maxHeight: 280 }}>
-                {NIGERIAN_STATES.map((name) => (
-                  <Pressable
-                    key={name}
+        {createKind === "state" ? (
+          <>
+            <Text style={styles.label}>Nigerian state</Text>
+            <ScrollView style={{ maxHeight: 280 }}>
+              {NIGERIAN_STATES.map((name) => (
+                <Pressable
+                  key={name}
+                  style={[
+                    styles.option,
+                    stateName === name && styles.optionActive,
+                  ]}
+                  onPress={() => setStateName(name)}
+                >
+                  <Text
                     style={[
-                      styles.option,
-                      stateName === name && styles.optionActive,
+                      styles.optionText,
+                      stateName === name && styles.optionTextActive,
                     ]}
-                    onPress={() => setStateName(name)}
                   >
-                    <Text
-                      style={[
-                        styles.optionText,
-                        stateName === name && styles.optionTextActive,
-                      ]}
-                    >
-                      {name}
-                    </Text>
-                  </Pressable>
-                ))}
-              </ScrollView>
-            </>
-          ) : null}
+                    {name}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </>
+        ) : null}
 
-          {createKind === "zone" ? (
-            <>
-              <Text style={styles.label}>Parent state</Text>
-              <ChipRow>
-                {tree.map((s) => (
-                  <Chip
-                    key={s.id}
-                    label={s.name}
-                    active={zoneStateId === s.id}
-                    onPress={() => setZoneStateId(s.id)}
-                  />
-                ))}
-              </ChipRow>
-              <Field
-                label="Zone name"
-                value={zoneName}
-                onChangeText={setZoneName}
-                placeholder="e.g. Lagos Central"
-              />
-            </>
-          ) : null}
-
-          {createKind === "branch" ? (
-            <>
-              <Text style={styles.label}>State</Text>
-              <ChipRow>
-                {tree.map((s) => (
-                  <Chip
-                    key={s.id}
-                    label={s.name}
-                    active={branchStateId === s.id}
-                    onPress={() => {
-                      setBranchStateId(s.id);
-                      setBranchZoneId("");
-                    }}
-                  />
-                ))}
-              </ChipRow>
-              <Text style={styles.label}>Zone (optional)</Text>
-              <ChipRow>
+        {createKind === "zone" ? (
+          <>
+            <Text style={styles.label}>Parent state</Text>
+            <ChipRow>
+              {tree.map((s) => (
                 <Chip
-                  label="No zone"
-                  active={!branchZoneId}
-                  onPress={() => setBranchZoneId("")}
+                  key={s.id}
+                  label={s.name}
+                  active={zoneStateId === s.id}
+                  onPress={() => setZoneStateId(s.id)}
                 />
-                {zonesForBranch.map((z) => (
-                  <Chip
-                    key={z.id}
-                    label={z.name}
-                    active={branchZoneId === z.id}
-                    onPress={() => setBranchZoneId(z.id)}
-                  />
-                ))}
-              </ChipRow>
-              <Field
-                label="Branch name"
-                value={branchName}
-                onChangeText={setBranchName}
-              />
-              <Field
-                label="Address (optional)"
-                value={branchAddress}
-                onChangeText={setBranchAddress}
-              />
-            </>
-          ) : null}
+              ))}
+            </ChipRow>
+            <Field
+              label="Zone name"
+              value={zoneName}
+              onChangeText={setZoneName}
+              placeholder="e.g. Lagos Central"
+            />
+          </>
+        ) : null}
 
-          {formError ? <InlineNotice message={formError} /> : null}
-
-          <View style={styles.modalActions}>
-            <View style={{ flex: 1 }}>
-              <GhostButton label="Cancel" onPress={requestCloseCreate} disabled={busy} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <PrimaryButton
-                label="Create"
-                loading={busy}
-                onPress={() => void submitCreate()}
+        {createKind === "branch" ? (
+          <>
+            <Text style={styles.label}>State</Text>
+            <ChipRow>
+              {tree.map((s) => (
+                <Chip
+                  key={s.id}
+                  label={s.name}
+                  active={branchStateId === s.id}
+                  onPress={() => {
+                    setBranchStateId(s.id);
+                    setBranchZoneId("");
+                  }}
+                />
+              ))}
+            </ChipRow>
+            <Text style={styles.label}>Zone (optional)</Text>
+            <ChipRow>
+              <Chip
+                label="No zone"
+                active={!branchZoneId}
+                onPress={() => setBranchZoneId("")}
               />
-            </View>
+              {zonesForBranch.map((z) => (
+                <Chip
+                  key={z.id}
+                  label={z.name}
+                  active={branchZoneId === z.id}
+                  onPress={() => setBranchZoneId(z.id)}
+                />
+              ))}
+            </ChipRow>
+            <Field
+              label="Branch name"
+              value={branchName}
+              onChangeText={setBranchName}
+            />
+            <Field
+              label="Address (optional)"
+              value={branchAddress}
+              onChangeText={setBranchAddress}
+            />
+          </>
+        ) : null}
+
+        {formError ? <InlineNotice message={formError} /> : null}
+
+        <View style={styles.modalActions}>
+          <View style={{ flex: 1 }}>
+            <GhostButton
+              label="Cancel"
+              onPress={requestCloseCreate}
+              disabled={busy}
+            />
           </View>
-        </ScrollView>
-      </Modal>
+          <View style={{ flex: 1 }}>
+            <PrimaryButton
+              label="Create"
+              loading={busy}
+              onPress={() => void submitCreate()}
+            />
+          </View>
+        </View>
+      </BottomSheet>
     </View>
   );
 }
@@ -505,7 +525,6 @@ const styles = StyleSheet.create({
     color: colors.error,
     marginVertical: spacing.sm,
   },
-  modalRoot: { flex: 1, backgroundColor: colors.bgSurface },
   modalTitle: {
     ...typography.title2,
     color: colors.navy,

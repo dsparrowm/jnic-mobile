@@ -63,13 +63,16 @@ export function useHomeDashboard() {
     return () => requestRef.current?.abort();
   }, [load]);
 
+  const refresh = useCallback(() => load(true), [load]);
+  const retry = useCallback(() => load(false), [load]);
+
   return {
     data,
     loading,
     refreshing,
     error,
     refreshError,
-    refresh: () => load(true),
-    retry: () => load(false),
+    refresh,
+    retry,
   };
 }

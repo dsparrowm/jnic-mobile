@@ -80,6 +80,10 @@ export default function LoginScreen() {
   }, [windowHeight]);
 
   async function onSubmit() {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError("Enter a valid email address.");
+      return;
+    }
     setError(null);
     setSubmitting(true);
     try {
@@ -96,7 +100,8 @@ export default function LoginScreen() {
     }
   }
 
-  const canSubmit = email.trim().length > 3 && password.length >= 8 && !submitting;
+  const canSubmit =
+    email.trim().length > 3 && password.length >= 8 && !submitting;
 
   return (
     <View style={styles.root}>
@@ -142,7 +147,10 @@ export default function LoginScreen() {
               textContentType="emailAddress"
               placeholder="you@jnic.org"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(next) => {
+                setEmail(next);
+                setError(null);
+              }}
               returnKeyType="next"
             />
 
@@ -150,7 +158,9 @@ export default function LoginScreen() {
               <Text style={styles.passwordLabel}>Password</Text>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+                accessibilityLabel={
+                  showPassword ? "Hide password" : "Show password"
+                }
                 accessibilityState={{ expanded: showPassword }}
                 hitSlop={8}
                 onPress={() => setShowPassword((v) => !v)}
@@ -163,12 +173,16 @@ export default function LoginScreen() {
             <Field
               tone="onNavy"
               label=""
+              accessibilityLabel="Password"
               secureTextEntry={!showPassword}
               autoComplete="password"
               textContentType="password"
               placeholder="Password"
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(next) => {
+                setPassword(next);
+                setError(null);
+              }}
               onSubmitEditing={() => {
                 if (canSubmit) void onSubmit();
               }}
@@ -264,7 +278,7 @@ const styles = StyleSheet.create({
   },
   error: {
     ...typography.footnote,
-    color: colors.error,
+    color: colors.errorOnNavy,
     marginBottom: spacing.md,
   },
 });

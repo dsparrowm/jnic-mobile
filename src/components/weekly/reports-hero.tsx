@@ -2,7 +2,13 @@ import { StyleSheet, Text, View } from "react-native";
 import type { AuthUser } from "@/src/lib/api";
 import { Avatar } from "@/src/components/ui";
 import { formatRoleShort } from "@/src/lib/format";
-import { colors, layout, radius, spacing, typography } from "@/src/theme/tokens";
+import {
+  colors,
+  layout,
+  radius,
+  spacing,
+  typography,
+} from "@/src/theme/tokens";
 
 export function ReportsHero({
   user,
@@ -126,6 +132,6 @@ const styles = StyleSheet.create({
   },
   roleText: {
     ...typography.overline,
-    color: colors.gold,
+    color: colors.goldText,
   },
 });

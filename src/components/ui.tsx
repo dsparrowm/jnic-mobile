@@ -12,8 +12,22 @@ import {
   type ViewStyle,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Haptics from "expo-haptics";
 import { EmptyPanel } from "@/src/components/premium/states";
-import { colors, layout, radius, spacing, typography } from "@/src/theme/tokens";
+
+import {
+  colors,
+  layout,
+  radius,
+  spacing,
+  typography,
+} from "@/src/theme/tokens";
+
+function lightHaptic() {
+  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(
+    () => undefined,
+  );
+}
 
 export function ScreenTitle({
   title,
@@ -29,7 +43,9 @@ export function ScreenTitle({
     <View style={[styles.screenTitle, { paddingTop: insets.top + 6 }]}>
       <View style={{ flex: 1 }}>
         <Text style={styles.screenTitleText}>{title}</Text>
-        {subtitle ? <Text style={styles.screenTitleSub}>{subtitle}</Text> : null}
+        {subtitle ? (
+          <Text style={styles.screenTitleSub}>{subtitle}</Text>
+        ) : null}
       </View>
       {right}
     </View>
@@ -58,7 +74,13 @@ export function Screen({
   );
 }
 
-export function Overline({ children, light = false }: { children: string; light?: boolean }) {
+export function Overline({
+  children,
+  light = false,
+}: {
+  children: string;
+  light?: boolean;
+}) {
   return (
     <Text style={[styles.overline, light && { color: colors.textOnNavyMuted }]}>
       {children}
@@ -79,14 +101,21 @@ export function Field({
   return (
     <View style={styles.field}>
       {label ? (
-        <Text style={[styles.fieldLabel, onNavy && styles.fieldLabelOnNavy]}>{label}</Text>
+        <Text style={[styles.fieldLabel, onNavy && styles.fieldLabelOnNavy]}>
+          {label}
+        </Text>
       ) : null}
       <TextInput
-        placeholderTextColor={onNavy ? colors.textOnNavyMuted : colors.textMuted}
+        placeholderTextColor={
+          onNavy ? colors.textOnNavyMuted : colors.textMuted
+        }
         style={[
           styles.fieldInput,
           onNavy && styles.fieldInputOnNavy,
-          focused && (onNavy ? styles.fieldInputOnNavyFocused : styles.fieldInputFocused),
+          focused &&
+            (onNavy
+              ? styles.fieldInputOnNavyFocused
+              : styles.fieldInputFocused),
           style,
         ]}
         onFocus={(event) => {
@@ -118,20 +147,31 @@ export function PrimaryButton({
   tone?: "gold" | "navy" | "danger";
 }) {
   const bg =
-    tone === "navy" ? colors.navy : tone === "danger" ? colors.error : colors.gold;
+    tone === "navy"
+      ? colors.navy
+      : tone === "danger"
+        ? colors.error
+        : colors.gold;
   const fg = tone === "gold" ? colors.goldForeground : colors.textOnNavy;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityState={{ disabled: Boolean(disabled || loading), busy: loading }}
-      onPress={onPress}
+      accessibilityState={{
+        disabled: Boolean(disabled || loading),
+        busy: loading,
+      }}
+      onPress={() => {
+        lightHaptic();
+        onPress();
+      }}
       disabled={disabled || loading}
       style={({ pressed }) => [
         styles.primaryBtn,
         { backgroundColor: bg },
         (disabled || loading) && { opacity: 0.45 },
-        pressed && !disabled && { opacity: 0.88, transform: [{ scale: 0.985 }] },
+        pressed &&
+          !disabled && { opacity: 0.88, transform: [{ scale: 0.985 }] },
       ]}
     >
       {loading ? (
@@ -157,7 +197,10 @@ export function GhostButton({
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled: Boolean(disabled) }}
-      onPress={onPress}
+      onPress={() => {
+        lightHaptic();
+        onPress();
+      }}
       disabled={disabled}
       style={({ pressed }) => [
         styles.ghostBtn,
@@ -183,10 +226,15 @@ export function Chip({
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: Boolean(active) }}
-      onPress={onPress}
+      onPress={() => {
+        lightHaptic();
+        onPress();
+      }}
       style={[styles.chip, active && styles.chipActive]}
     >
-      <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
+      <Text style={[styles.chipText, active && styles.chipTextActive]}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -297,7 +345,9 @@ export function Avatar({
           resizeMode="cover"
         />
       ) : (
-        <Text style={[styles.avatarText, { fontSize: size * 0.34 }]}>{initials}</Text>
+        <Text style={[styles.avatarText, { fontSize: size * 0.34 }]}>
+          {initials}
+        </Text>
       )}
     </View>
   );
@@ -397,7 +447,8 @@ const styles = StyleSheet.create({
   },
   chip: {
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    minHeight: 44,
+    justifyContent: "center",
     borderRadius: radius.full,
     backgroundColor: colors.bgSurface,
     borderWidth: 1,

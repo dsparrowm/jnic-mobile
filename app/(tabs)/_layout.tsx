@@ -18,7 +18,7 @@ export default function TabsLayout() {
           backgroundColor: colors.bgBase,
         }}
       >
-        <ActivityIndicator color={colors.gold} />
+        <ActivityIndicator color={colors.goldText} />
       </View>
     );
   }

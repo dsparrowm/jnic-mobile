@@ -92,7 +92,7 @@ export function EmptyPanel({
   return (
     <View style={styles.empty}>
       <View style={styles.emptyIcon}>
-        <Ionicons name={icon} size={22} color={colors.gold} />
+        <Ionicons name={icon} size={22} color={colors.goldText} />
       </View>
       <Text style={styles.emptyTitle}>{title}</Text>
       {body ? <Text style={styles.emptyBody}>{body}</Text> : null}

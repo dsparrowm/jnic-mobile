@@ -1,8 +1,12 @@
 import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
-import { useCallback } from "react";
-import { useRouter } from "expo-router";
+import { useCallback, useRef } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Role, type HqHomeTaskKind, type NotificationRecord } from "@repo/types";
+import {
+  Role,
+  type HqHomeTaskKind,
+  type NotificationRecord,
+} from "@repo/types";
 import { AttentionList } from "@/src/components/home/attention-list";
 import { AttendanceTrend } from "@/src/components/home/attendance-trend";
 import { HomeHero } from "@/src/components/home/home-hero";
@@ -22,7 +26,24 @@ import { openNotificationTarget } from "@/src/lib/notifications";
 import { useAuth } from "@/src/lib/session";
 import { colors, layout, spacing } from "@/src/theme/tokens";
 
-const TASK_ROUTES: Record<HqHomeTaskKind, "/pastors" | "/weekly" | "/approvals"> = {
+/** Re-fetches dashboard data each time the tab gains focus after mount. */
+function useRefreshOnFocus(refresh: () => Promise<unknown>) {
+  const firstFocus = useRef(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (firstFocus.current) {
+        firstFocus.current = false;
+        return;
+      }
+      void refresh();
+    }, [refresh]),
+  );
+}
+
+const TASK_ROUTES: Record<
+  HqHomeTaskKind,
+  "/pastors" | "/weekly" | "/approvals"
+> = {
   PENDING_ONBOARDING: "/pastors",
   MISSED_REPORTS: "/weekly",
   PENDING_SUMMARY_APPROVALS: "/approvals",
@@ -32,15 +53,9 @@ function HqHome() {
   const { user } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const {
-    data,
-    loading,
-    refreshing,
-    error,
-    refreshError,
-    refresh,
-    retry,
-  } = useHomeDashboard();
+  const { data, loading, refreshing, error, refreshError, refresh, retry } =
+    useHomeDashboard();
+  useRefreshOnFocus(refresh);
 
   const openPrimaryAction = () => {
     const route = data?.role === Role.LEAD_PASTOR ? "/approvals" : "/weekly";
@@ -111,11 +126,10 @@ function HqHome() {
 
           {data ? (
             <>
-              {refreshError ? <RefreshErrorBanner message={refreshError} /> : null}
-              <WeeklyHealthCard
-                dashboard={data}
-                onPress={openPrimaryAction}
-              />
+              {refreshError ? (
+                <RefreshErrorBanner message={refreshError} />
+              ) : null}
+              <WeeklyHealthCard dashboard={data} onPress={openPrimaryAction} />
               <HomeMetrics dashboard={data} />
               <AttentionList tasks={data.tasks} onTaskPress={openTask} />
               <AttendanceTrend points={data.attendanceTrend} />

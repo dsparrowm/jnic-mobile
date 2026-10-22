@@ -31,7 +31,9 @@ export function FeedbackThread({
       const response = await api.listReportFeedback(reportId);
       setItems(response.items);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not load feedback.");
+      setError(
+        err instanceof ApiError ? err.message : "Could not load feedback.",
+      );
     } finally {
       setLoading(false);
     }
@@ -77,7 +79,9 @@ export function FeedbackThread({
       setMessage("");
       setReplyTo(null);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not send feedback.");
+      setError(
+        err instanceof ApiError ? err.message : "Could not send feedback.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -113,7 +117,8 @@ export function FeedbackThread({
               </View>
               <Text style={styles.body}>{item.message}</Text>
               <Text style={styles.meta}>
-                To {item.toUser.name} · {new Date(item.createdAt).toLocaleString()}
+                To {item.toUser.name} ·{" "}
+                {new Date(item.createdAt).toLocaleString()}
               </Text>
             </View>
           );
@@ -181,7 +186,7 @@ const styles = StyleSheet.create({
   },
   replyAction: {
     ...typography.caption,
-    color: colors.gold,
+    color: colors.goldText,
     fontWeight: "700",
   },
   body: {
