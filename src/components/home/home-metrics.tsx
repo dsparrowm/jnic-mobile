@@ -14,26 +14,34 @@ export function HomeMetrics({ dashboard }: { dashboard: HqDashboardResponse }) {
     dashboard.role === Role.ADMIN
       ? [
           {
-            label: "Active",
+            label: "Active pastors",
             value: dashboard.pastors?.active ?? 0,
             icon: "people",
           },
-          { label: "Branches", value: dashboard.org.branches, icon: "git-branch" },
           {
-            label: "Attendance",
+            label: "Total branches",
+            value: dashboard.org.branches,
+            icon: "git-branch",
+          },
+          {
+            label: "This week",
             value: dashboard.weeklyReporting.attendance.total,
             icon: "pulse",
           },
         ]
       : [
           {
-            label: "Attendance",
+            label: "This week",
             value: dashboard.weeklyReporting.attendance.total,
             icon: "pulse",
           },
-          { label: "Branches", value: dashboard.org.branches, icon: "git-branch" },
           {
-            label: "Approvals",
+            label: "Branches",
+            value: dashboard.org.branches,
+            icon: "git-branch",
+          },
+          {
+            label: "To approve",
             value: dashboard.pendingSummaryApprovals,
             icon: "checkmark-done",
           },
@@ -49,7 +57,7 @@ export function HomeMetrics({ dashboard }: { dashboard: HqDashboardResponse }) {
           style={styles.metric}
         >
           <View style={styles.icon}>
-            <Ionicons name={metric.icon} size={16} color={colors.gold} />
+            <Ionicons name={metric.icon} size={16} color={colors.goldText} />
           </View>
           <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit>
             {metric.value.toLocaleString()}

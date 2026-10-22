@@ -1,10 +1,20 @@
 import type { ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { formatRoleShort, greetingName, timeOfDayGreeting } from "@/src/lib/format";
+import {
+  formatRoleShort,
+  greetingName,
+  timeOfDayGreeting,
+} from "@/src/lib/format";
 import type { AuthUser } from "@/src/lib/api";
 import { isHqUser } from "@/src/lib/auth";
 import { Avatar } from "@/src/components/ui";
-import { colors, layout, radius, spacing, typography } from "@/src/theme/tokens";
+import {
+  colors,
+  layout,
+  radius,
+  spacing,
+  typography,
+} from "@/src/theme/tokens";
 
 export function HomeHero({
   user,
@@ -170,7 +180,7 @@ const styles = StyleSheet.create({
   },
   roleText: {
     ...typography.overline,
-    color: colors.gold,
+    color: colors.goldText,
   },
   week: {
     ...typography.caption,

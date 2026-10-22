@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
   FlatList,
-  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -35,11 +34,21 @@ import {
 import { SearchField, StatusPill } from "@/src/components/premium/controls";
 import { PremiumHeader } from "@/src/components/premium/screen";
 import { InlineNotice, ScreenSkeleton } from "@/src/components/premium/states";
+import { BottomSheet } from "@/src/components/premium/bottom-sheet";
 import { SheetHeader } from "@/src/components/premium/sheet-header";
-import { colors, layout, radius, spacing, typography } from "@/src/theme/tokens";
+import {
+  colors,
+  layout,
+  radius,
+  spacing,
+  typography,
+} from "@/src/theme/tokens";
 
 function formatRole(role: string) {
-  return role.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+  return role
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function statusTone(status: string): "success" | "warning" | "neutral" {
@@ -225,7 +234,11 @@ function OrgCascadeFields({
             {branches.map((branch) => (
               <Chip
                 key={branch.id}
-                label={branch.zoneName ? `${branch.name} · ${branch.zoneName}` : branch.name}
+                label={
+                  branch.zoneName
+                    ? `${branch.name} · ${branch.zoneName}`
+                    : branch.name
+                }
                 active={value.branchId === branch.id}
                 onPress={() =>
                   onChange({
@@ -258,7 +271,9 @@ export default function PastorsScreen() {
   const [onboardBusy, setOnboardBusy] = useState(false);
   const [onboardError, setOnboardError] = useState<string | null>(null);
 
-  const [reassignPastor, setReassignPastor] = useState<PastorRecord | null>(null);
+  const [reassignPastor, setReassignPastor] = useState<PastorRecord | null>(
+    null,
+  );
   const [reassignForm, setReassignForm] = useState<OrgForm>({
     role: Role.BRANCH_PASTOR,
     stateId: "",
@@ -284,7 +299,9 @@ export default function PastorsScreen() {
       setSummary(pastors.summary);
       setOrgTree(tree);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to load pastors");
+      setError(
+        err instanceof ApiError ? err.message : "Failed to load pastors",
+      );
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -366,23 +383,28 @@ export default function PastorsScreen() {
 
   function requestCloseOnboard() {
     if (onboardBusy) return;
-    const dirty = JSON.stringify(onboardForm) !== JSON.stringify(INITIAL_ONBOARD);
+    const dirty =
+      JSON.stringify(onboardForm) !== JSON.stringify(INITIAL_ONBOARD);
     if (!dirty) {
       setOnboardOpen(false);
       return;
     }
-    Alert.alert("Discard invite?", "The information you entered will be lost.", [
-      { text: "Keep editing", style: "cancel" },
-      {
-        text: "Discard",
-        style: "destructive",
-        onPress: () => {
-          setOnboardOpen(false);
-          setOnboardForm(INITIAL_ONBOARD);
-          setOnboardError(null);
+    Alert.alert(
+      "Discard invite?",
+      "The information you entered will be lost.",
+      [
+        { text: "Keep editing", style: "cancel" },
+        {
+          text: "Discard",
+          style: "destructive",
+          onPress: () => {
+            setOnboardOpen(false);
+            setOnboardForm(INITIAL_ONBOARD);
+            setOnboardError(null);
+          },
         },
-      },
-    ]);
+      ],
+    );
   }
 
   function requestCloseReassign() {
@@ -394,14 +416,18 @@ export default function PastorsScreen() {
       setReassignPastor(null);
       return;
     }
-    Alert.alert("Discard changes?", "This pastor’s assignment will not be updated.", [
-      { text: "Keep editing", style: "cancel" },
-      {
-        text: "Discard",
-        style: "destructive",
-        onPress: () => setReassignPastor(null),
-      },
-    ]);
+    Alert.alert(
+      "Discard changes?",
+      "This pastor’s assignment will not be updated.",
+      [
+        { text: "Keep editing", style: "cancel" },
+        {
+          text: "Discard",
+          style: "destructive",
+          onPress: () => setReassignPastor(null),
+        },
+      ],
+    );
   }
 
   function openActions(pastor: PastorRecord) {
@@ -568,11 +594,18 @@ export default function PastorsScreen() {
               ]}
               onPress={() => openActions(item)}
             >
-              <Avatar name={item.name} imageUri={item.profilePicUrl} size={42} />
+              <Avatar
+                name={item.name}
+                imageUri={item.profilePicUrl}
+                size={42}
+              />
               <View style={styles.rowBody}>
                 <View style={styles.rowTop}>
                   <Text style={styles.rowName}>{item.name}</Text>
-                  <StatusPill label={item.status} tone={statusTone(item.status)} />
+                  <StatusPill
+                    label={item.status}
+                    tone={statusTone(item.status)}
+                  />
                 </View>
                 <Text style={styles.rowMeta}>{item.email}</Text>
                 <Text style={styles.rowMeta}>
@@ -591,97 +624,93 @@ export default function PastorsScreen() {
         />
       )}
 
-      <Modal
+      <BottomSheet
         visible={onboardOpen}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={requestCloseOnboard}
+        onClose={requestCloseOnboard}
+        scrollable
       >
-        <ScrollView
-          style={styles.modalRoot}
-          contentContainerStyle={{ padding: spacing.lg, paddingBottom: 48 }}
-        >
-          <SheetHeader
-            title="Onboard pastor"
-            subtitle="Send a secure setup invitation."
-            onClose={requestCloseOnboard}
-            closeDisabled={onboardBusy}
-          />
-          <Field
-            label="Name"
-            value={onboardForm.name}
-            onChangeText={(name) => setOnboardForm((f) => ({ ...f, name }))}
-          />
-          <Field
-            label="Email"
-            autoCapitalize="none"
-            keyboardType="email-address"
-            value={onboardForm.email}
-            onChangeText={(email) => setOnboardForm((f) => ({ ...f, email }))}
-          />
-          <Field
-            label="Phone (optional)"
-            keyboardType="phone-pad"
-            value={onboardForm.phone}
-            onChangeText={(phone) => setOnboardForm((f) => ({ ...f, phone }))}
-          />
-          <OrgCascadeFields
-            orgTree={orgTree}
-            value={onboardForm}
-            onChange={(next) => setOnboardForm((f) => ({ ...f, ...next }))}
-          />
-          {onboardError ? <InlineNotice message={onboardError} /> : null}
-          <View style={styles.modalActions}>
-            <View style={{ flex: 1 }}>
-              <GhostButton label="Cancel" onPress={requestCloseOnboard} disabled={onboardBusy} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <PrimaryButton
-                label="Send invite"
-                loading={onboardBusy}
-                onPress={() => void submitOnboard()}
-              />
-            </View>
+        <SheetHeader
+          title="Onboard pastor"
+          subtitle="Send a secure setup invitation."
+          onClose={requestCloseOnboard}
+          closeDisabled={onboardBusy}
+        />
+        <Field
+          label="Name"
+          value={onboardForm.name}
+          onChangeText={(name) => setOnboardForm((f) => ({ ...f, name }))}
+        />
+        <Field
+          label="Email"
+          autoCapitalize="none"
+          keyboardType="email-address"
+          value={onboardForm.email}
+          onChangeText={(email) => setOnboardForm((f) => ({ ...f, email }))}
+        />
+        <Field
+          label="Phone (optional)"
+          keyboardType="phone-pad"
+          value={onboardForm.phone}
+          onChangeText={(phone) => setOnboardForm((f) => ({ ...f, phone }))}
+        />
+        <OrgCascadeFields
+          orgTree={orgTree}
+          value={onboardForm}
+          onChange={(next) => setOnboardForm((f) => ({ ...f, ...next }))}
+        />
+        {onboardError ? <InlineNotice message={onboardError} /> : null}
+        <View style={styles.modalActions}>
+          <View style={{ flex: 1 }}>
+            <GhostButton
+              label="Cancel"
+              onPress={requestCloseOnboard}
+              disabled={onboardBusy}
+            />
           </View>
-        </ScrollView>
-      </Modal>
+          <View style={{ flex: 1 }}>
+            <PrimaryButton
+              label="Send invite"
+              loading={onboardBusy}
+              onPress={() => void submitOnboard()}
+            />
+          </View>
+        </View>
+      </BottomSheet>
 
-      <Modal
+      <BottomSheet
         visible={Boolean(reassignPastor)}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={requestCloseReassign}
+        onClose={requestCloseReassign}
+        scrollable
       >
-        <ScrollView
-          style={styles.modalRoot}
-          contentContainerStyle={{ padding: spacing.lg, paddingBottom: 48 }}
-        >
-          <SheetHeader
-            title={`Reassign ${reassignPastor?.name ?? "pastor"}`}
-            subtitle="Update role and organisation assignment."
-            onClose={requestCloseReassign}
-            closeDisabled={reassignBusy}
-          />
-          <OrgCascadeFields
-            orgTree={orgTree}
-            value={reassignForm}
-            onChange={setReassignForm}
-          />
-          {reassignError ? <InlineNotice message={reassignError} /> : null}
-          <View style={styles.modalActions}>
-            <View style={{ flex: 1 }}>
-              <GhostButton label="Cancel" onPress={requestCloseReassign} disabled={reassignBusy} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <PrimaryButton
-                label="Save"
-                loading={reassignBusy}
-                onPress={() => void submitReassign()}
-              />
-            </View>
+        <SheetHeader
+          title={`Reassign ${reassignPastor?.name ?? "pastor"}`}
+          subtitle="Update role and organisation assignment."
+          onClose={requestCloseReassign}
+          closeDisabled={reassignBusy}
+        />
+        <OrgCascadeFields
+          orgTree={orgTree}
+          value={reassignForm}
+          onChange={setReassignForm}
+        />
+        {reassignError ? <InlineNotice message={reassignError} /> : null}
+        <View style={styles.modalActions}>
+          <View style={{ flex: 1 }}>
+            <GhostButton
+              label="Cancel"
+              onPress={requestCloseReassign}
+              disabled={reassignBusy}
+            />
           </View>
-        </ScrollView>
-      </Modal>
+          <View style={{ flex: 1 }}>
+            <PrimaryButton
+              label="Save"
+              loading={reassignBusy}
+              onPress={() => void submitReassign()}
+            />
+          </View>
+        </View>
+      </BottomSheet>
     </View>
   );
 }
@@ -784,10 +813,6 @@ const styles = StyleSheet.create({
     ...typography.footnote,
     color: colors.error,
     marginVertical: spacing.sm,
-  },
-  modalRoot: {
-    flex: 1,
-    backgroundColor: colors.bgSurface,
   },
   modalTitle: {
     ...typography.title2,

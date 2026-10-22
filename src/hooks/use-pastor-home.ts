@@ -41,7 +41,9 @@ export function usePastorHome(user: AuthUser | null) {
       } catch (err) {
         if (controller.signal.aborted) return;
         const message =
-          err instanceof ApiError ? err.message : "Could not load your branch overview.";
+          err instanceof ApiError
+            ? err.message
+            : "Could not load your branch overview.";
         if (dataRef.current) {
           setRefreshError(message);
         } else {
@@ -62,13 +64,16 @@ export function usePastorHome(user: AuthUser | null) {
     return () => requestRef.current?.abort();
   }, [load]);
 
+  const refresh = useCallback(() => load(true), [load]);
+  const retry = useCallback(() => load(false), [load]);
+
   return {
     data,
     loading,
     refreshing,
     error,
     refreshError,
-    refresh: () => load(true),
-    retry: () => load(false),
+    refresh,
+    retry,
   };
 }

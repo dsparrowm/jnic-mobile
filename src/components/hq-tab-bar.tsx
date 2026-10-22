@@ -13,12 +13,17 @@ const ICONS: Record<string, { active: IonName; inactive: IonName }> = {
   library: { active: "library", inactive: "library-outline" },
   pastors: { active: "people", inactive: "people-outline" },
   org: { active: "business", inactive: "business-outline" },
-  approvals: { active: "checkmark-circle", inactive: "checkmark-circle-outline" },
+  approvals: {
+    active: "checkmark-circle",
+    inactive: "checkmark-circle-outline",
+  },
   summaries: { active: "stats-chart", inactive: "stats-chart-outline" },
   profile: { active: "person-circle", inactive: "person-circle-outline" },
 };
 
-function nestedIndex(route: BottomTabBarProps["state"]["routes"][number]): number {
+function nestedIndex(
+  route: BottomTabBarProps["state"]["routes"][number],
+): number {
   const nested = route.state;
   if (!nested || typeof nested.index !== "number") return 0;
   return nested.index;
@@ -39,12 +44,7 @@ export function HqTabBar({
   }
 
   return (
-    <View
-      style={[
-        styles.wrap,
-        { paddingBottom: Math.max(insets.bottom, 8) },
-      ]}
-    >
+    <View style={[styles.wrap, { paddingBottom: Math.max(insets.bottom, 8) }]}>
       <View style={styles.dock}>
         {visible.map((route) => {
           const focused = state.routes[state.index]?.key === route.key;
@@ -65,13 +65,20 @@ export function HqTabBar({
                   canPreventDefault: true,
                 });
                 if (event.defaultPrevented) return;
-                if (route.name === "weekly" || focused || nestedIndex(route) > 0) {
+                if (
+                  route.name === "weekly" ||
+                  focused ||
+                  nestedIndex(route) > 0
+                ) {
                   navigation.navigate(route.name, { screen: "index" });
                   return;
                 }
                 navigation.navigate(route.name, route.params);
               }}
-              style={({ pressed }) => [styles.item, pressed && { opacity: 0.7 }]}
+              style={({ pressed }) => [
+                styles.item,
+                pressed && { opacity: 0.7 },
+              ]}
             >
               <Ionicons
                 name={focused ? icons.active : icons.inactive}
@@ -119,7 +126,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   labelActive: {
-    color: colors.gold,
+    color: colors.goldText,
     fontWeight: "600",
   },
 });

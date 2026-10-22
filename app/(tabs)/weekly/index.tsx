@@ -55,13 +55,18 @@ export default function WeeklyIndexScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [weekOf, setWeekOf] = useState(() => computeWeekOf(getTodayInLagos()));
-  const [branchReport, setBranchReport] = useState<WeeklyReportRecord | null>(null);
+  const [branchReport, setBranchReport] = useState<WeeklyReportRecord | null>(
+    null,
+  );
   const [zone, setZone] = useState<ZoneSummaryResponse | null>(null);
   const [state, setState] = useState<StateSummaryResponse | null>(null);
-  const [national, setNational] = useState<NationalSummaryResponse | null>(null);
+  const [national, setNational] = useState<NationalSummaryResponse | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [branchKnown, setBranchKnown] = useState(true);
   const [forwarding, setForwarding] = useState(false);
 
   const canSubmit = canSubmitWeekly(user);
@@ -71,40 +76,53 @@ export default function WeeklyIndexScreen() {
 
   const load = useCallback(async () => {
     setError(null);
-    try {
-      const tasks: Promise<unknown>[] = [];
-      if (canSubmit) {
-        tasks.push(
-          api.listWeeklyReports({ weekOf, perPage: 1 }).then((res) => {
+    let failed = false;
+    const settle = <T,>(
+      promise: Promise<T>,
+      apply: (value: T) => void,
+      onFail?: () => void,
+    ): Promise<void> =>
+      promise
+        .then((value) => {
+          apply(value);
+        })
+        .catch(() => {
+          failed = true;
+          onFail?.();
+        });
+    const tasks: Promise<void>[] = [];
+    if (canSubmit) {
+      tasks.push(
+        settle(
+          api.listWeeklyReports({ weekOf, perPage: 1 }),
+          (res) => {
             setBranchReport(res.items[0] ?? null);
-          }),
-        );
-      } else {
-        setBranchReport(null);
-      }
-      if (zonal) {
-        tasks.push(api.getZoneSummary(weekOf).then(setZone));
-      } else {
-        setZone(null);
-      }
-      if (statePastor) {
-        tasks.push(api.getStateSummary(weekOf).then(setState));
-      } else {
-        setState(null);
-      }
-      if (hq) {
-        tasks.push(api.getNationalSummary(weekOf).then(setNational));
-      } else {
-        setNational(null);
-      }
-      await Promise.all(tasks);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Could not load this week.");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+            setBranchKnown(true);
+          },
+          () => setBranchKnown(false),
+        ),
+      );
+    } else {
+      setBranchReport(null);
+      setBranchKnown(true);
     }
+    if (zonal) tasks.push(settle(api.getZoneSummary(weekOf), setZone));
+    if (statePastor) tasks.push(settle(api.getStateSummary(weekOf), setState));
+    if (hq) tasks.push(settle(api.getNationalSummary(weekOf), setNational));
+    await Promise.all(tasks);
+    if (failed) {
+      setError(
+        "Could not reach the server. Check your connection and try again.",
+      );
+    }
+    setLoading(false);
+    setRefreshing(false);
   }, [canSubmit, hq, statePastor, weekOf, zonal]);
+
+  const retry = useCallback(() => {
+    setLoading(true);
+    void load();
+  }, [load]);
 
   useEffect(() => {
     setLoading(true);
@@ -115,7 +133,10 @@ export default function WeeklyIndexScreen() {
     router.push(`/weekly/${id}`);
   }
 
-  function confirmForward(kind: "zone" | "state", outstanding: ZoneReportBranchRow[]) {
+  function confirmForward(
+    kind: "zone" | "state",
+    outstanding: ZoneReportBranchRow[],
+  ) {
     const waiting = outstanding.map((row) => row.branch.name);
     const coverage =
       waiting.length > 0
@@ -142,7 +163,9 @@ export default function WeeklyIndexScreen() {
                 }
               } catch (err) {
                 setError(
-                  err instanceof ApiError ? err.message : "Could not forward this week.",
+                  err instanceof ApiError
+                    ? err.message
+                    : "Could not forward this week.",
                 );
               } finally {
                 setForwarding(false);
@@ -209,45 +232,61 @@ export default function WeeklyIndexScreen() {
             <>
               <SectionHeader title="My branch" />
               <SurfaceCard style={styles.card}>
-              <View style={styles.row}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.kicker}>
-                    {user?.branchName ?? branchReport?.branch.name ?? "My branch"}
-                  </Text>
-                  <Text style={styles.cardTitle}>
-                    {branchReport ? "Report submitted" : "No report yet"}
-                  </Text>
+                <View style={styles.row}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.kicker}>
+                      {user?.branchName ??
+                        branchReport?.branch.name ??
+                        "My branch"}
+                    </Text>
+                    <Text style={styles.cardTitle}>
+                      {branchReport
+                        ? "Report submitted"
+                        : branchKnown
+                          ? "No report yet"
+                          : "Status unavailable"}
+                    </Text>
+                  </View>
+                  {branchReport ? (
+                    <StatusPill
+                      label={reportStatusLabel(branchReport.status)}
+                      tone={reportStatusTone(branchReport.status)}
+                    />
+                  ) : (
+                    <StatusPill
+                      label={branchKnown ? "Due" : "Unknown"}
+                      tone={branchKnown ? "warning" : "info"}
+                    />
+                  )}
                 </View>
-                {branchReport ? (
-                  <StatusPill
-                    label={reportStatusLabel(branchReport.status)}
-                    tone={reportStatusTone(branchReport.status)}
+                {branchKnown || branchReport ? (
+                  <PrimaryButton
+                    label={branchReport ? "Open my report" : "Submit report"}
+                    onPress={() => {
+                      if (branchReport) {
+                        router.push(`/weekly/${branchReport.id}`);
+                        return;
+                      }
+                      router.push({
+                        pathname: "/weekly/submit",
+                        params: { weekOf },
+                      });
+                    }}
                   />
                 ) : (
-                  <StatusPill label="Due" tone="warning" />
+                  <PrimaryButton label="Try again" onPress={retry} />
                 )}
-              </View>
-              <PrimaryButton
-                label={branchReport ? "Open my report" : "Submit report"}
-                onPress={() => {
-                  if (branchReport) {
-                    router.push(`/weekly/${branchReport.id}`);
-                    return;
-                  }
-                  router.push({
-                    pathname: "/weekly/submit",
-                    params: { weekOf },
-                  });
-                }}
-              />
-            </SurfaceCard>
+              </SurfaceCard>
             </>
           ) : null}
 
           {!loading && zone ? (
             <>
               <SectionHeader title="Zone review" meta={zone.zone.name} />
-              <ExceptionCard branches={zone.branches} onOpenReport={openReport} />
+              <ExceptionCard
+                branches={zone.branches}
+                onOpenReport={openReport}
+              />
               <SummaryStrip summary={zone.summary} />
               {zone.summary.submitted > 0 ? (
                 <TotalsCard
@@ -269,7 +308,9 @@ export default function WeeklyIndexScreen() {
                   }
                   loading={forwarding}
                   disabled={forwarding}
-                  onPress={() => confirmForward("zone", outstandingBranches(zone.branches))}
+                  onPress={() =>
+                    confirmForward("zone", outstandingBranches(zone.branches))
+                  }
                 />
               </View>
               <ZoneCard zone={zone} onOpenReport={openReport} />
@@ -307,7 +348,9 @@ export default function WeeklyIndexScreen() {
                   onPress={() =>
                     confirmForward(
                       "state",
-                      outstandingBranches(state.zones.flatMap((item) => item.branches)),
+                      outstandingBranches(
+                        state.zones.flatMap((item) => item.branches),
+                      ),
                     )
                   }
                 />

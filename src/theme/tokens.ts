@@ -12,6 +12,8 @@ export const colors = {
   textOnNavy: "#F8FAFC",
   textOnNavyMuted: "rgba(248, 250, 252, 0.68)",
   gold: "#C9A050",
+  /** Gold darkened for text/icons on light surfaces (4.5:1+ contrast). */
+  goldText: "#8A6D2B",
   goldHover: "#B8903A",
   goldSoft: "rgba(201, 160, 80, 0.16)",
   goldGlow: "rgba(201, 160, 80, 0.14)",
@@ -25,6 +27,8 @@ export const colors = {
   warningSoft: "rgba(217, 119, 6, 0.12)",
   error: "#DC2626",
   errorSoft: "rgba(220, 38, 38, 0.10)",
+  /** Error red lifted for text on navy (8:1+ contrast). */
+  errorOnNavy: "#FCA5A5",
   info: "#2563EB",
   infoSoft: "rgba(37, 99, 235, 0.10)",
   overlay: "rgba(8, 18, 41, 0.45)",
@@ -51,19 +55,78 @@ export const radius = {
   full: 999,
 } as const;
 
+/** Weight-keyed Plus Jakarta Sans families (loaded in app/_layout.tsx). */
+export const fonts = {
+  regular: "PlusJakartaSans_400Regular",
+  medium: "PlusJakartaSans_500Medium",
+  semibold: "PlusJakartaSans_600SemiBold",
+  bold: "PlusJakartaSans_700Bold",
+} as const;
+
 export const typography = {
-  display: { fontSize: 34, fontWeight: "700" as const, letterSpacing: -0.6, lineHeight: 40 },
-  title1: { fontSize: 28, fontWeight: "700" as const, letterSpacing: -0.4, lineHeight: 34 },
-  title2: { fontSize: 22, fontWeight: "700" as const, letterSpacing: -0.3, lineHeight: 28 },
-  title3: { fontSize: 18, fontWeight: "600" as const, letterSpacing: -0.2, lineHeight: 24 },
-  body: { fontSize: 16, fontWeight: "400" as const, lineHeight: 22 },
-  bodyStrong: { fontSize: 16, fontWeight: "600" as const, lineHeight: 22 },
-  callout: { fontSize: 15, fontWeight: "400" as const, lineHeight: 21 },
-  footnote: { fontSize: 13, fontWeight: "400" as const, lineHeight: 18 },
-  caption: { fontSize: 12, fontWeight: "500" as const, lineHeight: 16, letterSpacing: 0.2 },
+  display: {
+    fontSize: 34,
+    fontWeight: "700" as const,
+    fontFamily: fonts.bold,
+    letterSpacing: -0.6,
+    lineHeight: 40,
+  },
+  title1: {
+    fontSize: 28,
+    fontWeight: "700" as const,
+    fontFamily: fonts.bold,
+    letterSpacing: -0.4,
+    lineHeight: 34,
+  },
+  title2: {
+    fontSize: 22,
+    fontWeight: "700" as const,
+    fontFamily: fonts.bold,
+    letterSpacing: -0.3,
+    lineHeight: 28,
+  },
+  title3: {
+    fontSize: 18,
+    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
+    letterSpacing: -0.2,
+    lineHeight: 24,
+  },
+  body: {
+    fontSize: 16,
+    fontWeight: "400" as const,
+    fontFamily: fonts.regular,
+    lineHeight: 22,
+  },
+  bodyStrong: {
+    fontSize: 16,
+    fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
+    lineHeight: 22,
+  },
+  callout: {
+    fontSize: 15,
+    fontWeight: "400" as const,
+    fontFamily: fonts.regular,
+    lineHeight: 21,
+  },
+  footnote: {
+    fontSize: 13,
+    fontWeight: "400" as const,
+    fontFamily: fonts.regular,
+    lineHeight: 18,
+  },
+  caption: {
+    fontSize: 12,
+    fontWeight: "500" as const,
+    fontFamily: fonts.medium,
+    lineHeight: 16,
+    letterSpacing: 0.2,
+  },
   overline: {
     fontSize: 11,
     fontWeight: "600" as const,
+    fontFamily: fonts.semibold,
     lineHeight: 14,
     letterSpacing: 0.8,
     textTransform: "uppercase" as const,

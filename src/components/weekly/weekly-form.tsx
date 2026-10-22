@@ -1,20 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import {
   computeWeekOf,
   formatWeekEndingLabel,
   listDaysOfWeek,
+  NO_SERVICE_NOTE_MIN,
   type WeeklyReportInput,
   type WeeklyReportRecord,
 } from "@repo/types";
 import { Field, GhostButton, PrimaryButton } from "@/src/components/ui";
+import { BottomSheet } from "@/src/components/premium/bottom-sheet";
 import { InlineNotice } from "@/src/components/premium/states";
 import { SheetHeader } from "@/src/components/premium/sheet-header";
 import { SurfaceCard } from "@/src/components/premium/screen";
@@ -31,6 +27,7 @@ type DraftValues = {
   tithe: string;
   offering: string;
   other: string;
+  noServiceNote: string;
 };
 
 function toDraft(
@@ -45,6 +42,7 @@ function toDraft(
     tithe: report ? formatAmount(String(report.finance?.tithe ?? 0)) : "",
     offering: report ? formatAmount(String(report.finance?.offering ?? 0)) : "",
     other: report ? formatAmount(String(report.finance?.other ?? 0)) : "",
+    noServiceNote: report?.noServiceNote ?? "",
   };
 }
 
@@ -101,14 +99,16 @@ export function WeeklyReportFields({
   const [values, setValues] = useState<DraftValues>(() =>
     toDraft(existingReport, defaultServiceDate),
   );
-  const [noService, setNoService] = useState(false);
+  const [noService, setNoService] = useState(() =>
+    Boolean(existingReport?.noServiceNote),
+  );
   const [dateOpen, setDateOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     setValues(toDraft(existingReport, defaultServiceDate));
-    setNoService(false);
+    setNoService(Boolean(existingReport?.noServiceNote));
     setFormError(null);
   }, [existingReport, defaultServiceDate]);
 
@@ -127,14 +127,15 @@ export function WeeklyReportFields({
   const offering = parseAmount(values.offering);
   const other = parseAmount(values.other);
 
-  const attendanceTotal =
-    (adults ?? 0) + (teenagers ?? 0) + (children ?? 0);
+  const attendanceTotal = (adults ?? 0) + (teenagers ?? 0) + (children ?? 0);
   const financeTotal = (tithe ?? 0) + (offering ?? 0) + (other ?? 0);
   const allZero = attendanceTotal === 0 && financeTotal === 0;
 
   function parsedValues(): WeeklyFormValues | null {
     if (!values.serviceDate) return null;
     if (noService) {
+      const note = values.noServiceNote.trim();
+      if (note.length < NO_SERVICE_NOTE_MIN) return null;
       return {
         serviceDate: values.serviceDate,
         adultCount: 0,
@@ -144,6 +145,7 @@ export function WeeklyReportFields({
         offering: 0,
         other: 0,
         currency: "NGN",
+        noServiceNote: note,
       };
     }
     if (
@@ -172,11 +174,17 @@ export function WeeklyReportFields({
     setFormError(null);
     const next = parsedValues();
     if (!next) {
-      setFormError("Enter a number in every field, or mark that there was no service.");
+      setFormError(
+        noService
+          ? "Add a short reason the branch did not meet."
+          : "Enter a number in every field, or mark that there was no service.",
+      );
       return;
     }
     if (!noService && allZero) {
-      setFormError("If the branch did not meet this week, mark No service before sending.");
+      setFormError(
+        "If the branch did not meet this week, mark No service before sending.",
+      );
       return;
     }
     setConfirmOpen(true);
@@ -185,9 +193,7 @@ export function WeeklyReportFields({
   return (
     <View style={styles.form}>
       {locked ? (
-        <InlineNotice
-          message="This report is locked after your zone forwarded it and can no longer be edited."
-        />
+        <InlineNotice message="This report is locked after your zone forwarded it and can no longer be edited." />
       ) : null}
 
       <Text style={styles.section}>Service</Text>
@@ -203,13 +209,18 @@ export function WeeklyReportFields({
       >
         <Text style={styles.dateLabel}>Service date</Text>
         <Text style={styles.dateValue}>
-          {values.serviceDate ? formatWeekEndingLabel(values.serviceDate) : "Choose a day"}
+          {values.serviceDate
+            ? formatWeekEndingLabel(values.serviceDate)
+            : "Choose a day"}
         </Text>
       </Pressable>
 
       <Pressable
         accessibilityRole="checkbox"
-        accessibilityState={{ checked: noService, disabled: locked || Boolean(loading) }}
+        accessibilityState={{
+          checked: noService,
+          disabled: locked || Boolean(loading),
+        }}
         disabled={locked || loading}
         onPress={() => {
           setNoService((current) => !current);
@@ -230,24 +241,43 @@ export function WeeklyReportFields({
         </View>
       </Pressable>
 
+      {noService ? (
+        <Field
+          label="Why was there no service?"
+          placeholder="e.g. Venue unavailable, public holiday"
+          value={values.noServiceNote}
+          onChangeText={(noServiceNote) =>
+            setValues((current) => ({ ...current, noServiceNote }))
+          }
+          multiline
+          maxLength={500}
+        />
+      ) : null}
+
       <Text style={styles.section}>Attendance</Text>
       <CountField
         label="Adults"
         value={values.adultCount}
         disabled={disabled}
-        onChange={(adultCount) => setValues((current) => ({ ...current, adultCount }))}
+        onChange={(adultCount) =>
+          setValues((current) => ({ ...current, adultCount }))
+        }
       />
       <CountField
         label="Teenagers"
         value={values.teenageCount}
         disabled={disabled}
-        onChange={(teenageCount) => setValues((current) => ({ ...current, teenageCount }))}
+        onChange={(teenageCount) =>
+          setValues((current) => ({ ...current, teenageCount }))
+        }
       />
       <CountField
         label="Children"
         value={values.childrenCount}
         disabled={disabled}
-        onChange={(childrenCount) => setValues((current) => ({ ...current, childrenCount }))}
+        onChange={(childrenCount) =>
+          setValues((current) => ({ ...current, childrenCount }))
+        }
       />
 
       <Text style={styles.section}>Finance</Text>
@@ -261,7 +291,9 @@ export function WeeklyReportFields({
         label="Offering"
         value={values.offering}
         disabled={disabled}
-        onChange={(offering) => setValues((current) => ({ ...current, offering }))}
+        onChange={(offering) =>
+          setValues((current) => ({ ...current, offering }))
+        }
       />
       <MoneyField
         label="Other"
@@ -275,7 +307,9 @@ export function WeeklyReportFields({
         <View style={styles.totalsRow}>
           <View style={{ flex: 1 }}>
             <Text style={styles.totalsLabel}>Attendance</Text>
-            <Text style={styles.totalsValue}>{formatCount(attendanceTotal)}</Text>
+            <Text style={styles.totalsValue}>
+              {formatCount(attendanceTotal)}
+            </Text>
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.totalsLabel}>Income</Text>
@@ -296,86 +330,85 @@ export function WeeklyReportFields({
         />
       ) : null}
 
-      <Modal
-        visible={dateOpen}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setDateOpen(false)}
-      >
-        <View style={styles.sheetPage}>
-          <SheetHeader
-            title="Service date"
-            subtitle="Pick the day your branch met this week"
-            onClose={() => setDateOpen(false)}
-          />
-          <View style={styles.dayRow}>
-            {weekDays.map((day) => {
-              const selected = day === values.serviceDate;
-              return (
-                <Pressable
-                  key={day}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                  onPress={() => {
-                    setValues((current) => ({ ...current, serviceDate: day }));
-                    setDateOpen(false);
-                  }}
-                  style={[styles.dayChip, selected && styles.dayChipOn]}
-                >
-                  <Text style={[styles.dayName, selected && styles.dayOnText]}>
-                    {weekdayShort(day)}
-                  </Text>
-                  <Text style={[styles.dayNum, selected && styles.dayOnText]}>
-                    {dayNumber(day)}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+      <BottomSheet visible={dateOpen} onClose={() => setDateOpen(false)}>
+        <SheetHeader
+          title="Service date"
+          subtitle="Pick the day your branch met this week"
+          onClose={() => setDateOpen(false)}
+        />
+        <View style={styles.dayRow}>
+          {weekDays.map((day) => {
+            const selected = day === values.serviceDate;
+            return (
+              <Pressable
+                key={day}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+                onPress={() => {
+                  setValues((current) => ({ ...current, serviceDate: day }));
+                  setDateOpen(false);
+                }}
+                style={[styles.dayChip, selected && styles.dayChipOn]}
+              >
+                <Text style={[styles.dayName, selected && styles.dayOnText]}>
+                  {weekdayShort(day)}
+                </Text>
+                <Text style={[styles.dayNum, selected && styles.dayOnText]}>
+                  {dayNumber(day)}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
-      </Modal>
+      </BottomSheet>
 
-      <Modal
-        visible={confirmOpen}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setConfirmOpen(false)}
-      >
-        <View style={styles.sheetPage}>
-          <SheetHeader
-            title="Check this week"
-            subtitle={branchName ?? "Your branch"}
-            onClose={() => setConfirmOpen(false)}
-          />
-          <Text style={styles.confirmMeta}>
-            {formatWeekEndingLabel(values.serviceDate)} · week ending {weekEnding}
-          </Text>
-          {noService ? (
-            <Text style={styles.confirmMeta}>No service — zeros will be sent.</Text>
-          ) : (
-            <View style={styles.totalsRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.totalsLabel}>Attendance</Text>
-                <Text style={styles.totalsValue}>{formatCount(attendanceTotal)}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.totalsLabel}>Income</Text>
-                <Text style={styles.totalsValue}>{formatMoney(financeTotal)}</Text>
-              </View>
+      <BottomSheet visible={confirmOpen} onClose={() => setConfirmOpen(false)}>
+        <SheetHeader
+          title="Check this week"
+          subtitle={branchName ?? "Your branch"}
+          onClose={() => setConfirmOpen(false)}
+        />
+        <Text style={styles.confirmMeta}>
+          {formatWeekEndingLabel(values.serviceDate)} · week ending {weekEnding}
+        </Text>
+        {noService ? (
+          <>
+            <Text style={styles.confirmMeta}>
+              No service — zeros will be sent.
+            </Text>
+            {values.noServiceNote.trim() ? (
+              <Text style={styles.confirmMeta}>
+                Reason: {values.noServiceNote.trim()}
+              </Text>
+            ) : null}
+          </>
+        ) : (
+          <View style={styles.totalsRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.totalsLabel}>Attendance</Text>
+              <Text style={styles.totalsValue}>
+                {formatCount(attendanceTotal)}
+              </Text>
             </View>
-          )}
-          <PrimaryButton
-            label={existingReport ? "Confirm update" : "Send report"}
-            loading={loading}
-            onPress={() => {
-              const next = parsedValues();
-              if (!next) return;
-              void onSubmit(next);
-            }}
-          />
-          <GhostButton label="Go back" onPress={() => setConfirmOpen(false)} />
-        </View>
-      </Modal>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.totalsLabel}>Income</Text>
+              <Text style={styles.totalsValue}>
+                {formatMoney(financeTotal)}
+              </Text>
+            </View>
+          </View>
+        )}
+        <PrimaryButton
+          label={existingReport ? "Confirm update" : "Send report"}
+          loading={loading}
+          onPress={() => {
+            const next = parsedValues();
+            if (!next) return;
+            void onSubmit(next);
+          }}
+        />
+        <GhostButton label="Go back" onPress={() => setConfirmOpen(false)} />
+      </BottomSheet>
     </View>
   );
 }
@@ -509,12 +542,6 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.85,
-  },
-  sheetPage: {
-    flex: 1,
-    backgroundColor: colors.bgSurface,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.xl,
   },
   dayRow: {
     flexDirection: "row",

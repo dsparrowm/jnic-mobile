@@ -9,7 +9,13 @@ import { formatRole } from "@/src/lib/format";
 import { PrimaryButton } from "@/src/components/ui";
 import { StatusPill } from "@/src/components/premium/controls";
 import { SurfaceCard } from "@/src/components/premium/screen";
-import { colors, layout, radius, spacing, typography } from "@/src/theme/tokens";
+import {
+  colors,
+  layout,
+  radius,
+  spacing,
+  typography,
+} from "@/src/theme/tokens";
 
 export default function UnavailableScreen() {
   const { user, signOut } = useAuth();
@@ -40,7 +46,7 @@ export default function UnavailableScreen() {
     >
       <StatusBar style="light" />
       <View style={styles.icon}>
-        <Ionicons name="shield-checkmark" size={26} color={colors.gold} />
+        <Ionicons name="shield-checkmark" size={26} color={colors.goldText} />
       </View>
       <StatusPill label="Leadership access" tone="warning" />
       <Text style={styles.title}>This workspace is not available</Text>
