@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
   },
   receiptTitle: {
     ...typography.title3,
-    color: colors.navy,
+    color: colors.textPrimary,
   },
   receiptRow: {
     flexDirection: "row",
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   },
   totalsValue: {
     ...typography.title3,
-    color: colors.navy,
+    color: colors.textPrimary,
     marginTop: 2,
   },
 });

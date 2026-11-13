@@ -1,41 +1,42 @@
-/** JNIC brand tokens — mobile-native scale (mirrors web brand, not web layout) */
+/** JNIC brand tokens — mobile-native scale. Midnight Executive theme: deep navy
+ * surfaces, gold as the single accent, serif display numerals. */
 
 export const colors = {
-  bgBase: "#F4F6FB",
-  bgSurface: "#FFFFFF",
-  bgSubtle: "#EEF1F8",
+  bgBase: "#070D1F",
+  bgSurface: "#0D1730",
+  bgSubtle: "#131F42",
   navy: "#0D1B3E",
-  navyDeep: "#081229",
-  navyMuted: "#1A2B52",
-  textPrimary: "#111827",
-  textMuted: "#6B7280",
-  textOnNavy: "#F8FAFC",
-  textOnNavyMuted: "rgba(248, 250, 252, 0.68)",
+  navyDeep: "#04081A",
+  navyMuted: "#16244B",
+  textPrimary: "#E9EDF7",
+  textMuted: "#7E8AAB",
+  textOnNavy: "#F4F6FC",
+  textOnNavyMuted: "rgba(233, 237, 247, 0.62)",
   gold: "#C9A050",
-  /** Gold darkened for text/icons on light surfaces (4.5:1+ contrast). */
-  goldText: "#8A6D2B",
+  /** Gold brightened for text/icons on dark surfaces (4.5:1+ contrast). */
+  goldText: "#D9B870",
   goldHover: "#B8903A",
-  goldSoft: "rgba(201, 160, 80, 0.16)",
-  goldGlow: "rgba(201, 160, 80, 0.14)",
+  goldSoft: "rgba(201, 160, 80, 0.14)",
+  goldGlow: "rgba(201, 160, 80, 0.10)",
   goldBorder: "rgba(201, 160, 80, 0.35)",
-  goldForeground: "#0D1B3E",
-  border: "#E5E7EB",
-  borderSubtle: "#EEF0F4",
-  success: "#16A34A",
-  successSoft: "rgba(22, 163, 74, 0.12)",
-  warning: "#D97706",
-  warningSoft: "rgba(217, 119, 6, 0.12)",
-  error: "#DC2626",
-  errorSoft: "rgba(220, 38, 38, 0.10)",
-  /** Error red lifted for text on navy (8:1+ contrast). */
+  goldForeground: "#0A1020",
+  border: "#1B2748",
+  borderSubtle: "#141E3D",
+  success: "#4ADE80",
+  successSoft: "rgba(74, 222, 128, 0.14)",
+  warning: "#FCD34D",
+  warningSoft: "rgba(217, 119, 6, 0.20)",
+  error: "#FCA5A5",
+  errorSoft: "rgba(220, 38, 38, 0.18)",
+  /** Error red for filled/icon usage on dark surfaces. */
   errorOnNavy: "#FCA5A5",
-  info: "#2563EB",
-  infoSoft: "rgba(37, 99, 235, 0.10)",
-  overlay: "rgba(8, 18, 41, 0.45)",
-  navyGlow: "rgba(26, 43, 82, 0.90)",
-  whiteGlow: "rgba(255, 255, 255, 0.04)",
-  previewBackdrop: "#111827",
-  previewBorder: "#1F2937",
+  info: "#93C5FD",
+  infoSoft: "rgba(37, 99, 235, 0.20)",
+  overlay: "rgba(4, 8, 26, 0.62)",
+  navyGlow: "rgba(22, 36, 75, 0.90)",
+  whiteGlow: "rgba(233, 237, 247, 0.06)",
+  previewBackdrop: "#04081A",
+  previewBorder: "#141E3D",
 } as const;
 
 export const spacing = {
@@ -61,6 +62,9 @@ export const fonts = {
   medium: "PlusJakartaSans_500Medium",
   semibold: "PlusJakartaSans_600SemiBold",
   bold: "PlusJakartaSans_700Bold",
+  /** Fraunces — editorial serif for KPI numerals and display figures. */
+  display: "Fraunces_500Medium",
+  displayStrong: "Fraunces_600SemiBold",
 } as const;
 
 export const typography = {
@@ -131,26 +135,34 @@ export const typography = {
     letterSpacing: 0.8,
     textTransform: "uppercase" as const,
   },
+  /** Serif figure for large KPI numerals (Fraunces). */
+  numeral: {
+    fontSize: 26,
+    fontWeight: "500" as const,
+    fontFamily: fonts.display,
+    letterSpacing: -0.4,
+    lineHeight: 32,
+  },
 };
 
 export const shadow = {
   soft: {
-    boxShadow: "0 8px 24px rgba(13, 27, 62, 0.08)",
-    shadowColor: "#0D1B3E",
+    boxShadow: "0 8px 24px rgba(4, 8, 26, 0.45)",
+    shadowColor: "#04081A",
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.45,
     shadowRadius: 24,
     elevation: 4,
   },
   float: {
-    boxShadow: "0 12px 28px rgba(13, 27, 62, 0.14)",
-    shadowColor: "#0D1B3E",
+    boxShadow: "0 12px 28px rgba(4, 8, 26, 0.6)",
+    shadowColor: "#04081A",
     shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.14,
+    shadowOpacity: 0.6,
     shadowRadius: 28,
     elevation: 8,
   },
-} as const;
+};
 
 export const layout = {
   screenPad: 20,

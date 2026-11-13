@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     ...typography.callout,
-    color: colors.navy,
+    color: colors.textPrimary,
   },
   linkRow: {
     minHeight: 48,
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   },
   linkLabel: {
     ...typography.callout,
-    color: colors.navy,
+    color: colors.textPrimary,
     fontWeight: "600",
   },
   destructive: {

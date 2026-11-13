@@ -18,7 +18,7 @@ export function WeekPicker({
         onPress={() => onChange(shiftWeekOf(weekOf, -1))}
         style={({ pressed }) => [styles.button, pressed && styles.pressed]}
       >
-        <Ionicons name="chevron-back" size={20} color={colors.navy} />
+        <Ionicons name="chevron-back" size={20} color={colors.textPrimary} />
       </Pressable>
       <View style={styles.copy}>
         <Text style={styles.kicker}>Week ending</Text>
@@ -30,7 +30,7 @@ export function WeekPicker({
         onPress={() => onChange(shiftWeekOf(weekOf, 1))}
         style={({ pressed }) => [styles.button, pressed && styles.pressed]}
       >
-        <Ionicons name="chevron-forward" size={20} color={colors.navy} />
+        <Ionicons name="chevron-forward" size={20} color={colors.textPrimary} />
       </Pressable>
     </View>
   );
@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
   },
   label: {
     ...typography.bodyStrong,
-    color: colors.navy,
+    color: colors.textPrimary,
     textAlign: "center",
   },
   pressed: {

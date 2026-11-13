@@ -32,7 +32,7 @@ export function PremiumHeader({
             <Ionicons
               name={icon}
               size={19}
-              color={light ? colors.navy : colors.gold}
+              color={colors.gold}
             />
           </View>
         ) : null}
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
     color: colors.textOnNavy,
   },
   titleLight: {
-    color: colors.navy,
+    color: colors.textPrimary,
   },
   subtitle: {
     ...typography.footnote,

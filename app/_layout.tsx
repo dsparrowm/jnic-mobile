@@ -10,6 +10,10 @@ import {
   PlusJakartaSans_600SemiBold,
   PlusJakartaSans_700Bold,
 } from "@expo-google-fonts/plus-jakarta-sans";
+import {
+  Fraunces_500Medium,
+  Fraunces_600SemiBold,
+} from "@expo-google-fonts/fraunces";
 import { AuthProvider, useAuth } from "@/src/lib/session";
 import { colors } from "@/src/theme/tokens";
 
@@ -84,6 +88,8 @@ export default function RootLayout() {
     PlusJakartaSans_500Medium,
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
+    Fraunces_500Medium,
+    Fraunces_600SemiBold,
   });
   const fontsReady = fontsLoaded || Boolean(fontError);
 
@@ -97,7 +103,7 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
       <PhonePreview>
         <AuthGate>
           <Stack

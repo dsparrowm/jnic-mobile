@@ -77,12 +77,13 @@ export function HqTabBar({
               }}
               style={({ pressed }) => [
                 styles.item,
+                focused && styles.itemActive,
                 pressed && { opacity: 0.7 },
               ]}
             >
               <Ionicons
                 name={focused ? icons.active : icons.inactive}
-                size={22}
+                size={20}
                 color={focused ? colors.gold : colors.textMuted}
               />
               <Text
@@ -101,23 +102,29 @@ export function HqTabBar({
 
 const styles = StyleSheet.create({
   wrap: {
-    backgroundColor: colors.bgSurface,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+    paddingHorizontal: 16,
     paddingTop: 6,
   },
   dock: {
     flexDirection: "row",
     alignItems: "center",
-    minHeight: 52,
-    paddingHorizontal: 4,
+    minHeight: 56,
+    padding: 6,
+    backgroundColor: colors.bgSurface,
+    borderRadius: 22,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
   item: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     gap: 3,
-    paddingVertical: 4,
+    paddingVertical: 7,
+    borderRadius: 15,
+  },
+  itemActive: {
+    backgroundColor: colors.goldSoft,
   },
   label: {
     fontSize: 10,

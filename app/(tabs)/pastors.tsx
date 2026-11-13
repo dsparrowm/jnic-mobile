@@ -739,7 +739,7 @@ const styles = StyleSheet.create({
   onboardBtnText: {
     ...typography.footnote,
     fontWeight: "700",
-    color: colors.navy,
+    color: colors.textPrimary,
   },
   search: {
     ...typography.body,
@@ -816,7 +816,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     ...typography.title2,
-    color: colors.navy,
+    color: colors.textPrimary,
   },
   modalSub: {
     ...typography.callout,

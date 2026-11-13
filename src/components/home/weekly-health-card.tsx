@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Role, type HqDashboardResponse } from "@repo/types";
 import {
   colors,
+  fonts,
   radius,
   shadow,
   spacing,
@@ -136,10 +137,11 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   value: {
-    fontSize: 28,
-    lineHeight: 34,
-    fontWeight: "700",
-    color: colors.navy,
+    fontSize: 30,
+    lineHeight: 36,
+    fontWeight: "500",
+    fontFamily: fonts.display,
+    color: colors.textOnNavy,
     marginTop: 2,
   },
   valueMuted: {
@@ -199,6 +201,6 @@ const styles = StyleSheet.create({
   actionText: {
     ...typography.footnote,
     fontWeight: "700",
-    color: colors.navy,
+    color: colors.textPrimary,
   },
 });

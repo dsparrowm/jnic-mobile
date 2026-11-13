@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   monthCenter: { alignItems: "center" },
   monthLabel: {
     ...typography.title3,
-    color: colors.navy,
+    color: colors.textPrimary,
   },
   yearLabel: {
     ...typography.caption,
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   },
   monthBtnText: {
     fontSize: 22,
-    color: colors.navy,
+    color: colors.textPrimary,
     fontWeight: "600",
   },
   row: {

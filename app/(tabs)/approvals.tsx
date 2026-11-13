@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
   },
   sectionInline: {
     ...typography.bodyStrong,
-    color: colors.navy,
+    color: colors.textPrimary,
   },
   card: {
     backgroundColor: colors.bgSurface,
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
   },
   monthBtnText: {
     fontSize: 22,
-    color: colors.navy,
+    color: colors.textPrimary,
     fontWeight: "600",
   },
   emptyWrap: { marginBottom: spacing.md },

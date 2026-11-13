@@ -230,7 +230,7 @@ export default function OrgScreen() {
                     <Ionicons
                       name={open ? "chevron-down" : "chevron-forward"}
                       size={17}
-                      color={colors.navy}
+                      color={colors.textMuted}
                     />
                     <Text style={styles.stateName}>{state.name}</Text>
                   </View>
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   primaryChip: {
-    backgroundColor: colors.navy,
+    backgroundColor: colors.gold,
     borderRadius: radius.full,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -460,7 +460,7 @@ const styles = StyleSheet.create({
   primaryChipText: {
     ...typography.footnote,
     fontWeight: "700",
-    color: colors.textOnNavy,
+    color: colors.goldForeground,
   },
   secondaryChip: {
     backgroundColor: colors.bgSurface,
@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
   secondaryChipText: {
     ...typography.footnote,
     fontWeight: "600",
-    color: colors.navy,
+    color: colors.textPrimary,
   },
   node: {
     backgroundColor: colors.bgSurface,
@@ -497,7 +497,7 @@ const styles = StyleSheet.create({
   },
   stateName: {
     ...typography.bodyStrong,
-    color: colors.navy,
+    color: colors.textPrimary,
   },
   zoneBlock: { marginTop: spacing.sm, paddingLeft: spacing.xs },
   zoneName: {
@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     ...typography.title2,
-    color: colors.navy,
+    color: colors.textPrimary,
     marginBottom: spacing.md,
   },
   label: {
@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
   },
   optionActive: { backgroundColor: colors.bgSubtle },
   optionText: { ...typography.body, color: colors.textPrimary },
-  optionTextActive: { fontWeight: "600", color: colors.navy },
+  optionTextActive: { fontWeight: "600", color: colors.textPrimary },
   modalActions: {
     flexDirection: "row",
     gap: spacing.sm,

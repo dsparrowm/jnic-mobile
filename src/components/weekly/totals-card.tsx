@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
   },
   value: {
     ...typography.bodyStrong,
-    color: colors.navy,
+    color: colors.textPrimary,
     marginTop: 2,
   },
 });

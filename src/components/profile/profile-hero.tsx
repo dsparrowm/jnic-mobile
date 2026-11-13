@@ -90,12 +90,12 @@ const styles = StyleSheet.create({
   },
   name: {
     ...typography.title2,
-    color: colors.navy,
+    color: colors.textPrimary,
     textAlign: "center",
   },
   title: {
     ...typography.callout,
-    color: colors.navy,
+    color: colors.textPrimary,
     fontWeight: "600",
     marginTop: spacing.xs,
     textAlign: "center",

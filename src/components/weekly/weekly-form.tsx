@@ -230,7 +230,7 @@ export function WeeklyReportFields({
       >
         <View style={[styles.checkbox, noService && styles.checkboxOn]}>
           {noService ? (
-            <Ionicons name="checkmark" size={16} color={colors.textOnNavy} />
+            <Ionicons name="checkmark" size={16} color={colors.goldForeground} />
           ) : null}
         </View>
         <View style={{ flex: 1 }}>
@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
   },
   dateValue: {
     ...typography.bodyStrong,
-    color: colors.navy,
+    color: colors.textPrimary,
     marginTop: 2,
   },
   checkRow: {
@@ -505,8 +505,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   checkboxOn: {
-    backgroundColor: colors.navy,
-    borderColor: colors.navy,
+    backgroundColor: colors.gold,
+    borderColor: colors.gold,
   },
   checkTitle: {
     ...typography.bodyStrong,
@@ -537,7 +537,7 @@ const styles = StyleSheet.create({
   },
   totalsValue: {
     ...typography.title3,
-    color: colors.navy,
+    color: colors.textPrimary,
     marginTop: 2,
   },
   pressed: {
@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   dayChipOn: {
-    backgroundColor: colors.navy,
+    backgroundColor: colors.gold,
   },
   dayName: {
     ...typography.caption,
@@ -566,10 +566,10 @@ const styles = StyleSheet.create({
   },
   dayNum: {
     ...typography.bodyStrong,
-    color: colors.navy,
+    color: colors.textPrimary,
   },
   dayOnText: {
-    color: colors.textOnNavy,
+    color: colors.goldForeground,
   },
   confirmMeta: {
     ...typography.footnote,

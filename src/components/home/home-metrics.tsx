@@ -1,7 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { StyleSheet, Text, View } from "react-native";
 import { Role, type HqDashboardResponse } from "@repo/types";
-import { colors, radius, spacing, typography } from "@/src/theme/tokens";
+import { colors, fonts, radius, spacing, typography } from "@/src/theme/tokens";
 
 type Metric = {
   label: string;
@@ -14,12 +14,12 @@ export function HomeMetrics({ dashboard }: { dashboard: HqDashboardResponse }) {
     dashboard.role === Role.ADMIN
       ? [
           {
-            label: "Active pastors",
+            label: "Pastors",
             value: dashboard.pastors?.active ?? 0,
             icon: "people",
           },
           {
-            label: "Total branches",
+            label: "Branches",
             value: dashboard.org.branches,
             icon: "git-branch",
           },
@@ -95,8 +95,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   value: {
-    ...typography.title3,
-    color: colors.navy,
+    fontSize: 19,
+    lineHeight: 24,
+    fontWeight: "500",
+    fontFamily: fonts.display,
+    color: colors.textOnNavy,
   },
   label: {
     ...typography.caption,
