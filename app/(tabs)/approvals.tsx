@@ -2,13 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   FlatList,
+  Pressable,
   RefreshControl,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { api, ApiError, type MonthlySummaryRecord } from "@/src/lib/api";
-import { EmptyState, GhostButton, PrimaryButton } from "@/src/components/ui";
+import { EmptyState, Field, GhostButton, PrimaryButton } from "@/src/components/ui";
 import { MonthPicker, StatusPill } from "@/src/components/premium/controls";
 import { PremiumHeader, SectionHeader, SurfaceCard } from "@/src/components/premium/screen";
 import { InlineNotice, ScreenSkeleton } from "@/src/components/premium/states";
@@ -71,6 +72,9 @@ export default function ApprovalsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [confirmItem, setConfirmItem] = useState<MonthlySummaryRecord | null>(null);
+  const [returnItem, setReturnItem] = useState<MonthlySummaryRecord | null>(null);
+  const [returnNote, setReturnNote] = useState("");
+  const [returningId, setReturningId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -100,6 +104,31 @@ export default function ApprovalsScreen() {
     const d = new Date(year, month - 1 + delta, 1);
     setMonth(d.getMonth() + 1);
     setYear(d.getFullYear());
+  }
+
+  function openReturn(item: MonthlySummaryRecord) {
+    setReturnNote("");
+    setReturnItem(item);
+  }
+
+  function returnSummary(item: MonthlySummaryRecord) {
+    const note = returnNote.trim();
+    void (async () => {
+      setReturningId(item.id);
+      try {
+        await api.returnMonthlySummary(item.id, note || undefined);
+        setReturnItem(null);
+        setReturnNote("");
+        await load();
+      } catch (err) {
+        Alert.alert(
+          "Error",
+          err instanceof ApiError ? err.message : "Return failed",
+        );
+      } finally {
+        setReturningId(null);
+      }
+    })();
   }
 
   function approve(item: MonthlySummaryRecord) {
@@ -171,12 +200,26 @@ export default function ApprovalsScreen() {
                 {item.scopeName ?? item.scopeType} summary
               </Text>
               <TotalsPreview record={item} />
-              <View style={{ marginTop: spacing.md }}>
-                <PrimaryButton
-                  label="Review & approve"
-                  loading={approvingId === item.id}
-                  onPress={() => setConfirmItem(item)}
-                />
+              <View style={styles.actionPair}>
+                <View style={{ flex: 1 }}>
+                  <PrimaryButton
+                    label="Review & approve"
+                    loading={approvingId === item.id}
+                    onPress={() => setConfirmItem(item)}
+                  />
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Return for changes"
+                  disabled={returningId === item.id}
+                  onPress={() => openReturn(item)}
+                  style={({ pressed }) => [
+                    styles.returnBtn,
+                    pressed && { opacity: 0.8 },
+                  ]}
+                >
+                  <Text style={styles.returnBtnText}>Return</Text>
+                </Pressable>
               </View>
             </View>
           )}
@@ -209,9 +252,18 @@ export default function ApprovalsScreen() {
                       </Text>
                       <StatusPill
                         label={humanizeStatus(item.status)}
-                        tone={item.status === "APPROVED" ? "success" : "warning"}
+                        tone={
+                          item.status === "APPROVED"
+                            ? "success"
+                            : item.status === "RETURNED"
+                              ? "danger"
+                              : "warning"
+                        }
                       />
                     </View>
+                    {item.status === "RETURNED" && item.returnNote ? (
+                      <Text style={styles.cardMeta}>“{item.returnNote}”</Text>
+                    ) : null}
                   </View>
                 ))
               )}
@@ -250,6 +302,44 @@ export default function ApprovalsScreen() {
               label="Go back"
               disabled={approvingId === confirmItem.id}
               onPress={() => setConfirmItem(null)}
+            />
+          </>
+        ) : null}
+      </BottomSheet>
+
+      <BottomSheet
+        visible={returnItem !== null}
+        onClose={() => {
+          if (!returningId) setReturnItem(null);
+        }}
+      >
+        {returnItem ? (
+          <>
+            <SheetHeader
+              title={`Return ${MONTH_NAMES[returnItem.month - 1]} ${returnItem.year}?`}
+              subtitle="The summary goes back for rework — optionally with a note."
+              onClose={() => setReturnItem(null)}
+              closeDisabled={returningId === returnItem.id}
+            />
+            <Field
+              label="Reason (optional)"
+              placeholder="e.g. Figures look low for a revival month…"
+              value={returnNote}
+              onChangeText={setReturnNote}
+              multiline
+              numberOfLines={3}
+              style={{ minHeight: 72, textAlignVertical: "top" }}
+            />
+            <PrimaryButton
+              label="Return for changes"
+              tone="danger"
+              loading={returningId === returnItem.id}
+              onPress={() => returnSummary(returnItem)}
+            />
+            <GhostButton
+              label="Go back"
+              disabled={returningId === returnItem.id}
+              onPress={() => setReturnItem(null)}
             />
           </>
         ) : null}
@@ -348,6 +438,23 @@ const styles = StyleSheet.create({
     fontSize: 22,
     color: colors.textPrimary,
     fontWeight: "600",
+  },
+  actionPair: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  returnBtn: {
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.error,
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.md,
+  },
+  returnBtnText: {
+    ...typography.bodyStrong,
+    color: colors.error,
   },
   previewRow: {
     flexDirection: "row",

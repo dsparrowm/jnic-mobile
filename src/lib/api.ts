@@ -142,6 +142,8 @@ export interface MonthlySummaryRecord {
   scopeId: string | null;
   scopeName?: string;
   status: string;
+  returnNote?: string | null;
+  returnedAt?: string | null;
   totals?: Record<string, unknown>;
   createdAt?: string;
   updatedAt?: string;
@@ -499,6 +501,12 @@ export const api = {
   approveMonthlySummary: (id: string) =>
     request<{ id: string; status: string }>(`/summaries/monthly/${id}/approve`, {
       method: "POST",
+    }),
+
+  returnMonthlySummary: (id: string, note?: string) =>
+    request<{ id: string; status: string }>(`/summaries/monthly/${id}/return`, {
+      method: "POST",
+      body: JSON.stringify({ note }),
     }),
 
   listMonthlySummaries: (month: number, year: number) => {
