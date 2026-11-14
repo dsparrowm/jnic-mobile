@@ -79,7 +79,7 @@ export function MonthPicker({
         onPress={onPrevious}
         style={({ pressed }) => [styles.monthButton, pressed && styles.pressed]}
       >
-        <Ionicons name="chevron-back" size={20} color={colors.navy} />
+        <Ionicons name="chevron-back" size={20} color={colors.textPrimary} />
       </Pressable>
       <View style={styles.monthCopy}>
         <Text style={styles.monthLabel}>{monthNames[month - 1]}</Text>
@@ -91,7 +91,7 @@ export function MonthPicker({
         onPress={onNext}
         style={({ pressed }) => [styles.monthButton, pressed && styles.pressed]}
       >
-        <Ionicons name="chevron-forward" size={20} color={colors.navy} />
+        <Ionicons name="chevron-forward" size={20} color={colors.textPrimary} />
       </Pressable>
     </View>
   );
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
   },
   monthLabel: {
     ...typography.title3,
-    color: colors.navy,
+    color: colors.textPrimary,
   },
   yearLabel: {
     ...typography.caption,

@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     ...typography.title3,
-    color: colors.navy,
+    color: colors.textPrimary,
     marginTop: 2,
   },
   forwardRow: {

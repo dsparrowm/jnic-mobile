@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.callout,
-    color: colors.navy,
+    color: colors.textPrimary,
     fontWeight: "600",
   },
   meta: {

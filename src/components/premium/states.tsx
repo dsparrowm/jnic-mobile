@@ -161,13 +161,13 @@ const styles = StyleSheet.create({
     minWidth: 120,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.navy,
+    backgroundColor: colors.gold,
     borderRadius: radius.md,
     marginTop: spacing.md,
   },
   retryText: {
     ...typography.bodyStrong,
-    color: colors.textOnNavy,
+    color: colors.goldForeground,
   },
   pressed: {
     opacity: 0.8,

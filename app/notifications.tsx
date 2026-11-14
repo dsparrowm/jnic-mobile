@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     ...typography.title3,
-    color: colors.navy,
+    color: colors.textPrimary,
   },
   emptyBody: {
     ...typography.footnote,

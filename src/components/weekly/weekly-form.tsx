@@ -15,7 +15,7 @@ import { InlineNotice } from "@/src/components/premium/states";
 import { SheetHeader } from "@/src/components/premium/sheet-header";
 import { SurfaceCard } from "@/src/components/premium/screen";
 import { formatCount, formatMoney } from "@/src/lib/format";
-import { colors, radius, spacing, typography } from "@/src/theme/tokens";
+import { colors, fonts, radius, spacing, typography } from "@/src/theme/tokens";
 
 export type WeeklyFormValues = WeeklyReportInput;
 
@@ -230,7 +230,7 @@ export function WeeklyReportFields({
       >
         <View style={[styles.checkbox, noService && styles.checkboxOn]}>
           {noService ? (
-            <Ionicons name="checkmark" size={16} color={colors.textOnNavy} />
+            <Ionicons name="checkmark" size={16} color={colors.goldForeground} />
           ) : null}
         </View>
         <View style={{ flex: 1 }}>
@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
   },
   dateValue: {
     ...typography.bodyStrong,
-    color: colors.navy,
+    color: colors.textPrimary,
     marginTop: 2,
   },
   checkRow: {
@@ -505,8 +505,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   checkboxOn: {
-    backgroundColor: colors.navy,
-    borderColor: colors.navy,
+    backgroundColor: colors.gold,
+    borderColor: colors.gold,
   },
   checkTitle: {
     ...typography.bodyStrong,
@@ -522,8 +522,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   totalsTitle: {
-    ...typography.bodyStrong,
-    color: colors.textPrimary,
+    ...typography.overline,
+    color: colors.textMuted,
     marginBottom: spacing.sm,
   },
   totalsRow: {
@@ -536,8 +536,10 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   totalsValue: {
-    ...typography.title3,
-    color: colors.navy,
+    fontFamily: fonts.display,
+    fontSize: 22,
+    lineHeight: 26,
+    color: colors.textPrimary,
     marginTop: 2,
   },
   pressed: {
@@ -558,7 +560,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   dayChipOn: {
-    backgroundColor: colors.navy,
+    backgroundColor: colors.gold,
   },
   dayName: {
     ...typography.caption,
@@ -566,10 +568,10 @@ const styles = StyleSheet.create({
   },
   dayNum: {
     ...typography.bodyStrong,
-    color: colors.navy,
+    color: colors.textPrimary,
   },
   dayOnText: {
-    color: colors.textOnNavy,
+    color: colors.goldForeground,
   },
   confirmMeta: {
     ...typography.footnote,

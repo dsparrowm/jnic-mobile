@@ -2,17 +2,49 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   FlatList,
+  Pressable,
   RefreshControl,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { api, ApiError, type MonthlySummaryRecord } from "@/src/lib/api";
-import { EmptyState, PrimaryButton } from "@/src/components/ui";
+import { EmptyState, Field, GhostButton, PrimaryButton } from "@/src/components/ui";
 import { MonthPicker, StatusPill } from "@/src/components/premium/controls";
-import { PremiumHeader, SectionHeader } from "@/src/components/premium/screen";
+import { PremiumHeader, SectionHeader, SurfaceCard } from "@/src/components/premium/screen";
 import { InlineNotice, ScreenSkeleton } from "@/src/components/premium/states";
-import { colors, layout, radius, spacing, typography } from "@/src/theme/tokens";
+import { BottomSheet } from "@/src/components/premium/bottom-sheet";
+import { SheetHeader } from "@/src/components/premium/sheet-header";
+import { formatCount, formatMoney, humanizeStatus } from "@/src/lib/format";
+import { colors, fonts, layout, radius, spacing, typography } from "@/src/theme/tokens";
+
+function totalsPreview(totals: MonthlySummaryRecord["totals"]) {
+  if (!totals) return null;
+  const num = (key: string) => Number(totals[key] ?? 0) || 0;
+  const attendance = num("adult") + num("teenage") + num("children");
+  const income = num("tithe") + num("offering") + num("other");
+  const currency = typeof totals.currency === "string" ? totals.currency : undefined;
+  return { attendance, income, currency };
+}
+
+function TotalsPreview({ record }: { record: MonthlySummaryRecord }) {
+  const preview = totalsPreview(record.totals);
+  if (!preview) return null;
+  return (
+    <View style={styles.previewRow}>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.previewLabel}>Attendance</Text>
+        <Text style={styles.previewValue}>{formatCount(preview.attendance)}</Text>
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.previewLabel}>Income</Text>
+        <Text style={styles.previewValue}>
+          {formatMoney(preview.income, preview.currency)}
+        </Text>
+      </View>
+    </View>
+  );
+}
 
 const MONTH_NAMES = [
   "January",
@@ -39,6 +71,10 @@ export default function ApprovalsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [confirmItem, setConfirmItem] = useState<MonthlySummaryRecord | null>(null);
+  const [returnItem, setReturnItem] = useState<MonthlySummaryRecord | null>(null);
+  const [returnNote, setReturnNote] = useState("");
+  const [returningId, setReturningId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -70,33 +106,47 @@ export default function ApprovalsScreen() {
     setYear(d.getFullYear());
   }
 
+  function openReturn(item: MonthlySummaryRecord) {
+    setReturnNote("");
+    setReturnItem(item);
+  }
+
+  function returnSummary(item: MonthlySummaryRecord) {
+    const note = returnNote.trim();
+    void (async () => {
+      setReturningId(item.id);
+      try {
+        await api.returnMonthlySummary(item.id, note || undefined);
+        setReturnItem(null);
+        setReturnNote("");
+        await load();
+      } catch (err) {
+        Alert.alert(
+          "Error",
+          err instanceof ApiError ? err.message : "Return failed",
+        );
+      } finally {
+        setReturningId(null);
+      }
+    })();
+  }
+
   function approve(item: MonthlySummaryRecord) {
-    Alert.alert(
-      "Approve national summary?",
-      `${MONTH_NAMES[item.month - 1]} ${item.year} — ${item.scopeName ?? item.scopeType}`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Approve",
-          onPress: () => {
-            void (async () => {
-              setApprovingId(item.id);
-              try {
-                await api.approveMonthlySummary(item.id);
-                await load();
-              } catch (err) {
-                Alert.alert(
-                  "Error",
-                  err instanceof ApiError ? err.message : "Approve failed",
-                );
-              } finally {
-                setApprovingId(null);
-              }
-            })();
-          },
-        },
-      ],
-    );
+    setConfirmItem(null);
+    void (async () => {
+      setApprovingId(item.id);
+      try {
+        await api.approveMonthlySummary(item.id);
+        await load();
+      } catch (err) {
+        Alert.alert(
+          "Error",
+          err instanceof ApiError ? err.message : "Approve failed",
+        );
+      } finally {
+        setApprovingId(null);
+      }
+    })();
   }
 
   return (
@@ -142,20 +192,34 @@ export default function ApprovalsScreen() {
           renderItem={({ item }) => (
             <View style={styles.card}>
               <View style={styles.cardTop}>
-                <Text style={styles.cardTitle}>
+                <Text style={styles.cardPeriod}>
                   {MONTH_NAMES[item.month - 1]} {item.year}
                 </Text>
-                <StatusPill label="Needs sign-off" tone="warning" />
               </View>
               <Text style={styles.cardMeta}>
                 {item.scopeName ?? item.scopeType} summary
               </Text>
-              <View style={{ marginTop: spacing.md }}>
-                <PrimaryButton
-                  label="Approve"
-                  loading={approvingId === item.id}
-                  onPress={() => approve(item)}
-                />
+              <TotalsPreview record={item} />
+              <View style={styles.actionPair}>
+                <View style={{ flex: 1 }}>
+                  <PrimaryButton
+                    label="Review & approve"
+                    loading={approvingId === item.id}
+                    onPress={() => setConfirmItem(item)}
+                  />
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Return for changes"
+                  disabled={returningId === item.id}
+                  onPress={() => openReturn(item)}
+                  style={({ pressed }) => [
+                    styles.returnBtn,
+                    pressed && { opacity: 0.8 },
+                  ]}
+                >
+                  <Text style={styles.returnBtnText}>Return</Text>
+                </Pressable>
               </View>
             </View>
           )}
@@ -187,10 +251,19 @@ export default function ApprovalsScreen() {
                         {item.scopeName ?? item.scopeType}
                       </Text>
                       <StatusPill
-                        label={item.status.replace(/_/g, " ")}
-                        tone={item.status === "APPROVED" ? "success" : "warning"}
+                        label={humanizeStatus(item.status)}
+                        tone={
+                          item.status === "APPROVED"
+                            ? "success"
+                            : item.status === "RETURNED"
+                              ? "danger"
+                              : "warning"
+                        }
                       />
                     </View>
+                    {item.status === "RETURNED" && item.returnNote ? (
+                      <Text style={styles.cardMeta}>“{item.returnNote}”</Text>
+                    ) : null}
                   </View>
                 ))
               )}
@@ -199,6 +272,78 @@ export default function ApprovalsScreen() {
           contentContainerStyle={{ paddingBottom: spacing.xl }}
         />
       )}
+
+      <BottomSheet
+        visible={confirmItem !== null}
+        onClose={() => setConfirmItem(null)}
+      >
+        {confirmItem ? (
+          <>
+            <SheetHeader
+              title={`${MONTH_NAMES[confirmItem.month - 1]} ${confirmItem.year}`}
+              subtitle={`${confirmItem.scopeName ?? confirmItem.scopeType} summary`}
+              onClose={() => setConfirmItem(null)}
+              closeDisabled={approvingId === confirmItem.id}
+            />
+            <SurfaceCard style={{ padding: spacing.md, marginBottom: spacing.md }}>
+              <TotalsPreview record={confirmItem} />
+              {totalsPreview(confirmItem.totals) === null ? (
+                <Text style={styles.cardMeta}>
+                  Totals are not available for this summary yet.
+                </Text>
+              ) : null}
+            </SurfaceCard>
+            <PrimaryButton
+              label="Approve summary"
+              loading={approvingId === confirmItem.id}
+              onPress={() => approve(confirmItem)}
+            />
+            <GhostButton
+              label="Go back"
+              disabled={approvingId === confirmItem.id}
+              onPress={() => setConfirmItem(null)}
+            />
+          </>
+        ) : null}
+      </BottomSheet>
+
+      <BottomSheet
+        visible={returnItem !== null}
+        onClose={() => {
+          if (!returningId) setReturnItem(null);
+        }}
+      >
+        {returnItem ? (
+          <>
+            <SheetHeader
+              title={`Return ${MONTH_NAMES[returnItem.month - 1]} ${returnItem.year}?`}
+              subtitle="The summary goes back for rework — optionally with a note."
+              onClose={() => setReturnItem(null)}
+              closeDisabled={returningId === returnItem.id}
+            />
+            <Field
+              label="Reason (optional)"
+              placeholder="e.g. Figures look low for a revival month…"
+              value={returnNote}
+              onChangeText={setReturnNote}
+              multiline
+              numberOfLines={3}
+              style={{ minHeight: 72, textAlignVertical: "top" }}
+            />
+            <PrimaryButton
+              label="Return for changes"
+              tone="danger"
+              loading={returningId === returnItem.id}
+              onPress={() => returnSummary(returnItem)}
+            />
+            <GhostButton
+              label="Go back"
+              disabled={returningId === returnItem.id}
+              onPress={() => setReturnItem(null)}
+            />
+          </>
+        ) : null}
+      </BottomSheet>
     </View>
   );
 }
@@ -233,7 +378,7 @@ const styles = StyleSheet.create({
   },
   sectionInline: {
     ...typography.bodyStrong,
-    color: colors.navy,
+    color: colors.textPrimary,
   },
   card: {
     backgroundColor: colors.bgSurface,
@@ -264,6 +409,12 @@ const styles = StyleSheet.create({
     ...typography.bodyStrong,
     color: colors.textPrimary,
   },
+  cardPeriod: {
+    fontFamily: fonts.display,
+    fontSize: 20,
+    lineHeight: 24,
+    color: colors.textPrimary,
+  },
   cardMeta: {
     ...typography.footnote,
     marginTop: 4,
@@ -285,8 +436,41 @@ const styles = StyleSheet.create({
   },
   monthBtnText: {
     fontSize: 22,
-    color: colors.navy,
+    color: colors.textPrimary,
     fontWeight: "600",
+  },
+  actionPair: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  returnBtn: {
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.error,
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.md,
+  },
+  returnBtnText: {
+    ...typography.bodyStrong,
+    color: colors.error,
+  },
+  previewRow: {
+    flexDirection: "row",
+    gap: spacing.md,
+    marginTop: spacing.sm,
+  },
+  previewLabel: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  previewValue: {
+    fontFamily: fonts.display,
+    fontSize: 20,
+    lineHeight: 24,
+    color: colors.textPrimary,
+    marginTop: 2,
   },
   emptyWrap: { marginBottom: spacing.md },
   emptyLine: {

@@ -8,7 +8,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   orientation: "portrait",
   icon: "./assets/images/icon.png",
   scheme: "jnlop",
-  userInterfaceStyle: "light",
+  userInterfaceStyle: "dark",
+  runtimeVersion: {
+    policy: "appVersion",
+  },
+  updates: {
+    url: "https://u.expo.dev/d18a0041-c623-41a7-b08a-186ba44831b2",
+  },
   ios: {
     supportsTablet: true,
     bundleIdentifier: "org.jnic.jnlop",
@@ -25,8 +31,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     softwareKeyboardLayoutMode: "resize",
   },
   androidStatusBar: {
-    barStyle: "dark-content",
-    backgroundColor: "#F4F6FB",
+    barStyle: "light-content",
+    backgroundColor: "#070D1F",
   },
   web: {
     bundler: "metro",
@@ -37,6 +43,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     "expo-router",
     "expo-secure-store",
     "expo-dev-client",
+    "expo-updates",
+    [
+      "expo-build-properties",
+      {
+        android: {
+          buildArchs: ["arm64-v8a"],
+        },
+      },
+    ],
     [
       "expo-splash-screen",
       {

@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
   },
   branch: {
     ...typography.title3,
-    color: colors.navy,
+    color: colors.textPrimary,
   },
   meta: {
     ...typography.footnote,

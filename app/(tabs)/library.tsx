@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.title3,
-    color: colors.navy,
+    color: colors.textPrimary,
     textAlign: "center",
   },
   body: {

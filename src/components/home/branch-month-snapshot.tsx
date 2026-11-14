@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
   },
   headline: {
     ...typography.callout,
-    color: colors.navy,
+    color: colors.textPrimary,
     fontWeight: "600",
   },
   meta: {
