@@ -36,6 +36,7 @@ import { PremiumHeader } from "@/src/components/premium/screen";
 import { InlineNotice, ScreenSkeleton } from "@/src/components/premium/states";
 import { BottomSheet } from "@/src/components/premium/bottom-sheet";
 import { SheetHeader } from "@/src/components/premium/sheet-header";
+import { humanizeStatus } from "@/src/lib/format";
 import {
   colors,
   layout,
@@ -284,6 +285,8 @@ export default function PastorsScreen() {
   const [reassignBusy, setReassignBusy] = useState(false);
   const [reassignError, setReassignError] = useState<string | null>(null);
 
+  const [actionPastor, setActionPastor] = useState<PastorRecord | null>(null);
+
   const load = useCallback(async () => {
     setError(null);
     try {
@@ -431,86 +434,64 @@ export default function PastorsScreen() {
   }
 
   function openActions(pastor: PastorRecord) {
-    const buttons: {
-      text: string;
-      style?: "cancel" | "destructive" | "default";
-      onPress?: () => void;
-    }[] = [{ text: CancelLabel, style: "cancel" }];
+    setActionPastor(pastor);
+  }
 
-    if (pastor.status === UserStatus.PENDING) {
-      buttons.push({
-        text: "Resend invite",
-        onPress: () => {
-          void (async () => {
-            try {
-              await api.resendOnboarding(pastor.id);
-              Alert.alert("Sent", "Onboarding email resent.");
-              await load();
-            } catch (err) {
-              Alert.alert(
-                "Error",
-                err instanceof ApiError ? err.message : "Resend failed",
-              );
-            }
-          })();
+  function resendInvite(pastor: PastorRecord) {
+    setActionPastor(null);
+    void (async () => {
+      try {
+        await api.resendOnboarding(pastor.id);
+        await load();
+      } catch (err) {
+        Alert.alert(
+          "Error",
+          err instanceof ApiError ? err.message : "Resend failed",
+        );
+      }
+    })();
+  }
+
+  function openReassign(pastor: PastorRecord) {
+    setActionPastor(null);
+    const next = {
+      role: pastor.role,
+      stateId: pastor.state?.id ?? "",
+      zoneId: pastor.zone?.id ?? "",
+      branchId: pastor.branch?.id ?? "",
+    };
+    setReassignForm(next);
+    setReassignInitial(next);
+    setReassignError(null);
+    setReassignPastor(pastor);
+  }
+
+  function confirmDeactivate(pastor: PastorRecord) {
+    setActionPastor(null);
+    Alert.alert(
+      "Deactivate pastor?",
+      `${pastor.name} will lose access immediately.`,
+      [
+        { text: CancelLabel, style: "cancel" },
+        {
+          text: "Deactivate",
+          style: "destructive",
+          onPress: () => {
+            void (async () => {
+              try {
+                await api.deactivateUser(pastor.id);
+                await load();
+              } catch (err) {
+                Alert.alert(
+                  "Error",
+                  err instanceof ApiError ? err.message : "Deactivate failed",
+                );
+              }
+            })();
+          },
         },
-      });
-    }
-
-    if (pastor.status === UserStatus.ACTIVE) {
-      buttons.push({
-        text: "Reassign",
-        onPress: () => {
-          const next = {
-            role: pastor.role,
-            stateId: pastor.state?.id ?? "",
-            zoneId: pastor.zone?.id ?? "",
-            branchId: pastor.branch?.id ?? "",
-          };
-          setReassignForm(next);
-          setReassignInitial(next);
-          setReassignError(null);
-          setReassignPastor(pastor);
-        },
-      });
-    }
-
-    if (pastor.status !== UserStatus.DEACTIVATED) {
-      buttons.push({
-        text: "Deactivate",
-        style: "destructive",
-        onPress: () => {
-          Alert.alert(
-            "Deactivate pastor?",
-            `${pastor.name} will lose access immediately.`,
-            [
-              { text: CancelLabel, style: "cancel" },
-              {
-                text: "Deactivate",
-                style: "destructive",
-                onPress: () => {
-                  void (async () => {
-                    try {
-                      await api.deactivateUser(pastor.id);
-                      await load();
-                    } catch (err) {
-                      Alert.alert(
-                        "Error",
-                        err instanceof ApiError
-                          ? err.message
-                          : "Deactivate failed",
-                      );
-                    }
-                  })();
-                },
-              },
-            ],
-          );
-        },
-      });
-    }
-
-    Alert.alert(pastor.name, pastor.email, buttons);
+      ],
+    );
   }
 
   return (
@@ -603,11 +584,10 @@ export default function PastorsScreen() {
                 <View style={styles.rowTop}>
                   <Text style={styles.rowName}>{item.name}</Text>
                   <StatusPill
-                    label={item.status}
+                    label={humanizeStatus(item.status)}
                     tone={statusTone(item.status)}
                   />
                 </View>
-                <Text style={styles.rowMeta}>{item.email}</Text>
                 <Text style={styles.rowMeta}>
                   {formatRole(item.role)}
                   {item.branch?.name
@@ -710,6 +690,48 @@ export default function PastorsScreen() {
             />
           </View>
         </View>
+      </BottomSheet>
+
+      <BottomSheet
+        visible={actionPastor !== null}
+        onClose={() => setActionPastor(null)}
+      >
+        {actionPastor ? (
+          <>
+            <SheetHeader
+              title={actionPastor.name}
+              subtitle={`${formatRole(actionPastor.role)} · ${actionPastor.email}`}
+              onClose={() => setActionPastor(null)}
+            />
+            {actionPastor.status === UserStatus.PENDING ? (
+              <Pressable
+                accessibilityRole="button"
+                style={styles.actionRow}
+                onPress={() => resendInvite(actionPastor)}
+              >
+                <Text style={styles.actionRowText}>Resend invite</Text>
+              </Pressable>
+            ) : null}
+            {actionPastor.status === UserStatus.ACTIVE ? (
+              <Pressable
+                accessibilityRole="button"
+                style={styles.actionRow}
+                onPress={() => openReassign(actionPastor)}
+              >
+                <Text style={styles.actionRowText}>Reassign</Text>
+              </Pressable>
+            ) : null}
+            {actionPastor.status !== UserStatus.DEACTIVATED ? (
+              <Pressable
+                accessibilityRole="button"
+                style={styles.actionRow}
+                onPress={() => confirmDeactivate(actionPastor)}
+              >
+                <Text style={styles.actionRowDanger}>Deactivate</Text>
+              </Pressable>
+            ) : null}
+          </>
+        ) : null}
       </BottomSheet>
     </View>
   );
@@ -828,5 +850,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: spacing.sm,
     marginTop: spacing.lg,
+  },
+  actionRow: {
+    minHeight: 52,
+    justifyContent: "center",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.borderSubtle,
+  },
+  actionRowText: {
+    ...typography.bodyStrong,
+    color: colors.textPrimary,
+  },
+  actionRowDanger: {
+    ...typography.bodyStrong,
+    color: colors.error,
   },
 });

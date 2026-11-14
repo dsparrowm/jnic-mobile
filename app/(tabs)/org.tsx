@@ -214,7 +214,7 @@ export default function OrgScreen() {
             />
           ) : null}
           {tree.map((state) => {
-            const open = expandedStates[state.id] ?? true;
+            const open = expandedStates[state.id] ?? false;
             return (
               <View key={state.id} style={styles.node}>
                 <Pressable
@@ -233,7 +233,12 @@ export default function OrgScreen() {
                     />
                     <Text style={styles.stateName}>{state.name}</Text>
                   </View>
-                  <Text style={styles.count}>{state.zones.length} zones</Text>
+                  <Text style={styles.count}>
+                    {state.zones.length} zones ·{" "}
+                    {state.zones.reduce((n, z) => n + z.branches.length, 0) +
+                      (state.branches ?? []).length}{" "}
+                    branches
+                  </Text>
                 </Pressable>
                 {open ? (
                   <>

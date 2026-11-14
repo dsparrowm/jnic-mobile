@@ -77,3 +77,10 @@ export function formatMemberSince(value: string): string {
     timeZone: "Africa/Lagos",
   }).format(new Date(value));
 }
+
+export function humanizeStatus(value: string): string {
+  return value
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/^\w/, (c) => c.toUpperCase());
+}

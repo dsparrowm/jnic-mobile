@@ -11,7 +11,8 @@ import { EmptyState } from "@/src/components/ui";
 import { MonthPicker, StatusPill } from "@/src/components/premium/controls";
 import { PremiumHeader } from "@/src/components/premium/screen";
 import { InlineNotice, ScreenSkeleton } from "@/src/components/premium/states";
-import { colors, layout, radius, spacing, typography } from "@/src/theme/tokens";
+import { formatCount, formatMoney, humanizeStatus } from "@/src/lib/format";
+import { colors, fonts, layout, radius, spacing, typography } from "@/src/theme/tokens";
 
 const MONTH_NAMES = [
   "January",
@@ -112,13 +113,30 @@ export default function SummariesScreen() {
                   {item.scopeName ?? item.scopeType}
                 </Text>
                 <StatusPill
-                  label={item.status.replace(/_/g, " ")}
+                  label={humanizeStatus(item.status)}
                   tone={item.status === "APPROVED" ? "success" : "warning"}
                 />
               </View>
               <Text style={styles.cardMeta}>
                 {MONTH_NAMES[item.month - 1]} {item.year} · Updated rollup
               </Text>
+              {(() => {
+                const t = item.totals;
+                if (!t) return null;
+                const n = (k: string) => Number(t[k] ?? 0) || 0;
+                const people = n("totalAdult") + n("totalTeenage") + n("totalChildren");
+                const income = n("totalTithe") + n("totalOffering") + n("totalOther");
+                if (people === 0 && income === 0) return null;
+                return (
+                  <Text style={styles.cardFigures}>
+                    {people > 0 ? `${formatCount(people)} attendance` : ""}
+                    {people > 0 && income > 0 ? " · " : ""}
+                    {income > 0
+                      ? formatMoney(income, typeof t.currency === "string" ? t.currency : undefined)
+                      : ""}
+                  </Text>
+                );
+              })()}
             </View>
           )}
           contentContainerStyle={{ paddingVertical: spacing.md, paddingBottom: spacing.xl, gap: spacing.sm }}
@@ -199,6 +217,13 @@ const styles = StyleSheet.create({
     ...typography.footnote,
     marginTop: 4,
     color: colors.textMuted,
+  },
+  cardFigures: {
+    fontFamily: fonts.display,
+    fontSize: 17,
+    lineHeight: 21,
+    color: colors.textPrimary,
+    marginTop: spacing.sm,
   },
   error: {
     ...typography.footnote,
