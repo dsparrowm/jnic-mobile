@@ -24,7 +24,9 @@ export function HomeMetrics({ dashboard }: { dashboard: HqDashboardResponse }) {
   const reportsDelta: Delta =
     weeklyReporting.missed > 0
       ? { text: `${weeklyReporting.missed} missed`, tone: "down" }
-      : { text: "all in", tone: "up" };
+      : weeklyReporting.pending > 0
+        ? { text: `${weeklyReporting.pending} pending`, tone: "muted" }
+        : { text: "all in", tone: "up" };
 
   const isAdmin = data.role === Role.ADMIN;
   const middle = isAdmin
