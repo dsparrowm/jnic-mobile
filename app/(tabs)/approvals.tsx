@@ -20,10 +20,9 @@ import { colors, fonts, layout, radius, spacing, typography } from "@/src/theme/
 function totalsPreview(totals: MonthlySummaryRecord["totals"]) {
   if (!totals) return null;
   const num = (key: string) => Number(totals[key] ?? 0) || 0;
-  const attendance = num("totalAdult") + num("totalTeenage") + num("totalChildren");
-  const income = num("totalTithe") + num("totalOffering") + num("totalOther");
+  const attendance = num("adult") + num("teenage") + num("children");
+  const income = num("tithe") + num("offering") + num("other");
   const currency = typeof totals.currency === "string" ? totals.currency : undefined;
-  if (attendance === 0 && income === 0) return null;
   return { attendance, income, currency };
 }
 

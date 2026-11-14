@@ -124,9 +124,8 @@ export default function SummariesScreen() {
                 const t = item.totals;
                 if (!t) return null;
                 const n = (k: string) => Number(t[k] ?? 0) || 0;
-                const people = n("totalAdult") + n("totalTeenage") + n("totalChildren");
-                const income = n("totalTithe") + n("totalOffering") + n("totalOther");
-                if (people === 0 && income === 0) return null;
+                const people = n("adult") + n("teenage") + n("children");
+                const income = n("tithe") + n("offering") + n("other");
                 return (
                   <Text style={styles.cardFigures}>
                     {people > 0 ? `${formatCount(people)} attendance` : ""}
