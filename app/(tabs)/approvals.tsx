@@ -12,7 +12,7 @@ import { EmptyState, PrimaryButton } from "@/src/components/ui";
 import { MonthPicker, StatusPill } from "@/src/components/premium/controls";
 import { PremiumHeader, SectionHeader } from "@/src/components/premium/screen";
 import { InlineNotice, ScreenSkeleton } from "@/src/components/premium/states";
-import { colors, layout, radius, spacing, typography } from "@/src/theme/tokens";
+import { colors, fonts, layout, radius, spacing, typography } from "@/src/theme/tokens";
 
 const MONTH_NAMES = [
   "January",
@@ -142,7 +142,7 @@ export default function ApprovalsScreen() {
           renderItem={({ item }) => (
             <View style={styles.card}>
               <View style={styles.cardTop}>
-                <Text style={styles.cardTitle}>
+                <Text style={styles.cardPeriod}>
                   {MONTH_NAMES[item.month - 1]} {item.year}
                 </Text>
                 <StatusPill label="Needs sign-off" tone="warning" />
@@ -262,6 +262,12 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     ...typography.bodyStrong,
+    color: colors.textPrimary,
+  },
+  cardPeriod: {
+    fontFamily: fonts.display,
+    fontSize: 20,
+    lineHeight: 24,
     color: colors.textPrimary,
   },
   cardMeta: {

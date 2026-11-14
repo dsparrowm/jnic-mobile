@@ -67,7 +67,7 @@ export default function SummariesScreen() {
         title="Summaries"
         subtitle="National monthly rollups"
         icon="stats-chart"
-        right={<StatusPill label={`${items.length} scopes`} tone="warning" />}
+        right={<StatusPill label={`${items.length} scopes`} tone="info" />}
       />
       <MonthPicker
         month={month}

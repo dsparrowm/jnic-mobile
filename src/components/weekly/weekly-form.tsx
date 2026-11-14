@@ -15,7 +15,7 @@ import { InlineNotice } from "@/src/components/premium/states";
 import { SheetHeader } from "@/src/components/premium/sheet-header";
 import { SurfaceCard } from "@/src/components/premium/screen";
 import { formatCount, formatMoney } from "@/src/lib/format";
-import { colors, radius, spacing, typography } from "@/src/theme/tokens";
+import { colors, fonts, radius, spacing, typography } from "@/src/theme/tokens";
 
 export type WeeklyFormValues = WeeklyReportInput;
 
@@ -522,8 +522,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   totalsTitle: {
-    ...typography.bodyStrong,
-    color: colors.textPrimary,
+    ...typography.overline,
+    color: colors.textMuted,
     marginBottom: spacing.sm,
   },
   totalsRow: {
@@ -536,7 +536,9 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   totalsValue: {
-    ...typography.title3,
+    fontFamily: fonts.display,
+    fontSize: 22,
+    lineHeight: 26,
     color: colors.textPrimary,
     marginTop: 2,
   },

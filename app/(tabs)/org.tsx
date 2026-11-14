@@ -152,7 +152,6 @@ export default function OrgScreen() {
       setBranchName("");
       setBranchAddress("");
       await load();
-      Alert.alert("Created", "Organization unit saved.");
     } catch (err) {
       setFormError(err instanceof ApiError ? err.message : "Create failed");
     } finally {
@@ -166,7 +165,7 @@ export default function OrgScreen() {
         title="Organization"
         subtitle="States, zones, and branches"
         icon="business"
-        right={<StatusPill label={`${tree.length} states`} tone="warning" />}
+        right={<StatusPill label={`${tree.length} states`} tone="info" />}
       />
       <ChipRow>
         <Pressable
