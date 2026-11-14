@@ -22,6 +22,7 @@ import { WeeklyHealthCard } from "@/src/components/home/weekly-health-card";
 import { NotificationBell } from "@/src/components/notifications/notification-bell";
 import { useHomeDashboard } from "@/src/hooks/use-home-dashboard";
 import { api } from "@/src/lib/api";
+import { formatShortWeekLabel, todayWeekday } from "@/src/lib/format";
 import { openNotificationTarget } from "@/src/lib/notifications";
 import { useAuth } from "@/src/lib/session";
 import { colors, layout, spacing } from "@/src/theme/tokens";
@@ -88,12 +89,9 @@ function HqHome() {
       <HomeHero
         user={user}
         tone="light"
-        branchName={
-          user?.role === Role.LEAD_PASTOR ? "Lead Pastor" : "Headquarters"
-        }
         location={
           data?.weekLabel
-            ? `Week ending ${data.weekLabel}`
+            ? `${todayWeekday()} · Week ending ${formatShortWeekLabel(data.weekLabel)}`
             : "National operations"
         }
         topInset={insets.top}
@@ -129,9 +127,9 @@ function HqHome() {
               {refreshError ? (
                 <RefreshErrorBanner message={refreshError} />
               ) : null}
-              <WeeklyHealthCard dashboard={data} onPress={openPrimaryAction} />
               <HomeMetrics dashboard={data} />
               <AttentionList tasks={data.tasks} onTaskPress={openTask} />
+              <WeeklyHealthCard dashboard={data} onPress={openPrimaryAction} />
               <AttendanceTrend points={data.attendanceTrend} />
               <RecentActivity
                 items={data.recentActivity.items}

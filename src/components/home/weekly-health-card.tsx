@@ -1,9 +1,9 @@
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Role, type HqDashboardResponse } from "@repo/types";
+import { ProgressRing } from "@/src/components/progress-ring";
+import { formatShortWeekLabel } from "@/src/lib/format";
 import {
   colors,
-  fonts,
   radius,
   shadow,
   spacing,
@@ -17,190 +17,93 @@ export function WeeklyHealthCard({
   dashboard: HqDashboardResponse;
   onPress: () => void;
 }) {
-  const { submitted, total, missed } = dashboard.weeklyReporting;
+  const { submitted, total } = dashboard.weeklyReporting;
   const percent = total > 0 ? Math.round((submitted / total) * 100) : 0;
-  const hasCoverage = total > 0;
-  const isHealthy = missed === 0;
+  const week = formatShortWeekLabel(dashboard.weekLabel);
   const action =
-    dashboard.role === Role.ADMIN ? "Open weekly reports" : "Open approvals";
+    dashboard.role === Role.ADMIN ? "Open reports" : "Open approvals";
 
   return (
-    <View style={[styles.card, shadow.soft]}>
-      <View style={styles.topRow}>
-        <View>
-          <Text style={styles.overline}>Weekly health</Text>
-          <Text style={styles.value}>
-            {submitted}
-            <Text style={styles.valueMuted}>/{total}</Text>
-          </Text>
-          <Text style={styles.label}>HQ-visible branch reports</Text>
-        </View>
-        <View
-          style={[
-            styles.status,
-            {
-              backgroundColor: !hasCoverage
-                ? colors.infoSoft
-                : isHealthy
-                  ? colors.successSoft
-                  : colors.warningSoft,
-            },
-          ]}
-        >
-          <Ionicons
-            name={
-              !hasCoverage
-                ? "time"
-                : isHealthy
-                  ? "checkmark-circle"
-                  : "alert-circle"
-            }
-            size={16}
-            color={
-              !hasCoverage
-                ? colors.info
-                : isHealthy
-                  ? colors.success
-                  : colors.warning
-            }
-          />
-          <Text
-            style={[
-              styles.statusText,
-              {
-                color: !hasCoverage
-                  ? colors.info
-                  : isHealthy
-                    ? colors.success
-                    : colors.warning,
-              },
-            ]}
-          >
-            {!hasCoverage
-              ? "Awaiting data"
-              : isHealthy
-                ? "On track"
-                : `${missed} missed`}
-          </Text>
-        </View>
-      </View>
-
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Weekly health. ${submitted} of ${total} branch reports received, ${percent} percent coverage. ${action}.`}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.card,
+        shadow.soft,
+        pressed && styles.cardPressed,
+      ]}
+    >
       <View
         accessible
         accessibilityRole="progressbar"
         accessibilityLabel="Weekly report coverage"
-        accessibilityValue={{
-          min: 0,
-          max: 100,
-          now: percent,
-          text: `${percent}%`,
-        }}
-        style={styles.progressTrack}
+        accessibilityValue={{ min: 0, max: 100, now: percent, text: `${percent}%` }}
       >
-        <View style={[styles.progressFill, { width: `${percent}%` }]} />
-      </View>
-      <View style={styles.progressLabels}>
-        <Text style={styles.progressText}>{percent}% coverage</Text>
-        <Text style={styles.progressText}>{dashboard.weekLabel}</Text>
+        <ProgressRing
+          percent={percent}
+          size={74}
+          strokeWidth={5}
+          color={colors.gold}
+          trackColor={colors.bgSubtle}
+        >
+          <Text style={styles.percent}>{percent}%</Text>
+          <Text style={styles.percentLabel}>coverage</Text>
+        </ProgressRing>
       </View>
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={action}
-        onPress={onPress}
-        style={({ pressed }) => [
-          styles.action,
-          pressed && styles.actionPressed,
-        ]}
-      >
-        <Text style={styles.actionText}>{action}</Text>
-        <Ionicons name="arrow-forward" size={16} color={colors.goldText} />
-      </Pressable>
-    </View>
+      <View style={styles.copy}>
+        <Text style={styles.title}>Weekly health</Text>
+        <Text style={styles.description}>
+          {submitted} of {total} branch reports received for {week}.
+        </Text>
+        <Text style={styles.link}>{action} →</Text>
+      </View>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
     backgroundColor: colors.bgSurface,
     borderRadius: radius.xl,
     padding: spacing.md,
   },
-  topRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: spacing.sm,
+  cardPressed: {
+    opacity: 0.8,
   },
-  overline: {
-    ...typography.overline,
-    color: colors.textMuted,
-  },
-  value: {
-    fontSize: 30,
-    lineHeight: 36,
-    fontWeight: "500",
-    fontFamily: fonts.display,
-    color: colors.textOnNavy,
-    marginTop: 2,
-  },
-  valueMuted: {
-    color: colors.textMuted,
-  },
-  label: {
-    ...typography.footnote,
-    color: colors.textMuted,
-  },
-  status: {
-    minHeight: 32,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.xs,
-    borderRadius: radius.full,
-    paddingHorizontal: 10,
-  },
-  statusText: {
-    ...typography.caption,
-    fontWeight: "700",
-  },
-  progressTrack: {
-    height: 8,
-    backgroundColor: colors.bgSubtle,
-    borderRadius: radius.full,
-    overflow: "hidden",
-    marginTop: spacing.md,
-  },
-  progressFill: {
-    height: "100%",
-    minWidth: 3,
-    backgroundColor: colors.gold,
-    borderRadius: radius.full,
-  },
-  progressLabels: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 6,
-  },
-  progressText: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  action: {
-    minHeight: 44,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.borderSubtle,
-    marginTop: spacing.sm,
-    paddingTop: spacing.sm,
-  },
-  actionPressed: {
-    opacity: 0.7,
-  },
-  actionText: {
-    ...typography.footnote,
+  percent: {
+    fontSize: 15,
+    lineHeight: 18,
     fontWeight: "700",
     color: colors.textPrimary,
+  },
+  percentLabel: {
+    fontSize: 8,
+    lineHeight: 10,
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+    color: colors.textMuted,
+  },
+  copy: {
+    flex: 1,
+    gap: 4,
+  },
+  title: {
+    ...typography.title3,
+    color: colors.textPrimary,
+  },
+  description: {
+    ...typography.footnote,
+    color: colors.textMuted,
+  },
+  link: {
+    ...typography.footnote,
+    fontWeight: "700",
+    color: colors.goldText,
+    marginTop: 2,
   },
 });

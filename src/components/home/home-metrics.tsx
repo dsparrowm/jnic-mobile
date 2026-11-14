@@ -1,69 +1,76 @@
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { StyleSheet, Text, View } from "react-native";
-import { Role, type HqDashboardResponse } from "@repo/types";
-import { colors, fonts, radius, spacing, typography } from "@/src/theme/tokens";
+import { Role } from "@repo/types";
+import type { HqDashboardResponse } from "@repo/types";
+import { formatCount } from "@/src/lib/format";
+import { colors, fonts, spacing } from "@/src/theme/tokens";
 
-type Metric = {
-  label: string;
-  value: number;
-  icon: React.ComponentProps<typeof Ionicons>["name"];
+type Delta = {
+  text: string;
+  tone: "up" | "down" | "muted";
 };
 
 export function HomeMetrics({ dashboard }: { dashboard: HqDashboardResponse }) {
-  const metrics: Metric[] =
-    dashboard.role === Role.ADMIN
-      ? [
-          {
-            label: "Pastors",
-            value: dashboard.pastors?.active ?? 0,
-            icon: "people",
-          },
-          {
-            label: "Branches",
-            value: dashboard.org.branches,
-            icon: "git-branch",
-          },
-          {
-            label: "This week",
-            value: dashboard.weeklyReporting.attendance.total,
-            icon: "pulse",
-          },
-        ]
-      : [
-          {
-            label: "This week",
-            value: dashboard.weeklyReporting.attendance.total,
-            icon: "pulse",
-          },
-          {
-            label: "Branches",
-            value: dashboard.org.branches,
-            icon: "git-branch",
-          },
-          {
-            label: "To approve",
-            value: dashboard.pendingSummaryApprovals,
-            icon: "checkmark-done",
-          },
-        ];
+  const data = dashboard;
+  const { weeklyReporting, attendanceTrend } = data;
+  const latest = attendanceTrend.at(-1)?.total ?? 0;
+  const previous = attendanceTrend.at(-2)?.total ?? 0;
+  const change = previous > 0 ? Math.round(((latest - previous) / previous) * 100) : null;
+
+  const attendanceDelta: Delta =
+    change === null || change === 0
+      ? { text: "vs last week", tone: "muted" }
+      : { text: `${change > 0 ? "▲" : "▼"} ${Math.abs(change)}%`, tone: change > 0 ? "up" : "down" };
+
+  const reportsDelta: Delta =
+    weeklyReporting.missed > 0
+      ? { text: `${weeklyReporting.missed} missed`, tone: "down" }
+      : { text: "all in", tone: "up" };
+
+  const isAdmin = data.role === Role.ADMIN;
+  const middle = isAdmin
+    ? {
+        label: "Pastors",
+        value: formatCount(data.pastors?.active ?? 0),
+        delta: {
+          text: `${data.pastors?.pending ?? 0} pending`,
+          tone: "muted" as const,
+        },
+      }
+    : {
+        label: "To approve",
+        value: formatCount(data.pendingSummaryApprovals),
+        delta: { text: "waiting", tone: "muted" as const },
+      };
+
+  const kpis = [
+    {
+      label: "Attendance",
+      value: formatCount(weeklyReporting.attendance.total),
+      delta: attendanceDelta,
+    },
+    middle,
+    {
+      label: "Reports in",
+      value: `${weeklyReporting.submitted}/${weeklyReporting.total}`,
+      delta: reportsDelta,
+    },
+  ];
 
   return (
-    <View style={styles.grid}>
-      {metrics.map((metric) => (
+    <View style={styles.strip}>
+      {kpis.map((kpi, index) => (
         <View
-          key={metric.label}
-          accessible
-          accessibilityLabel={`${metric.label}: ${metric.value.toLocaleString()}`}
-          style={styles.metric}
+          key={kpi.label}
+          style={[styles.cell, index > 0 && styles.cellDivider]}
         >
-          <View style={styles.icon}>
-            <Ionicons name={metric.icon} size={16} color={colors.goldText} />
-          </View>
           <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit>
-            {metric.value.toLocaleString()}
+            {kpi.value}
           </Text>
           <Text style={styles.label} numberOfLines={1}>
-            {metric.label}
+            {kpi.label}
+          </Text>
+          <Text style={[styles.delta, styles[kpi.delta.tone]]} numberOfLines={1}>
+            {kpi.delta.text}
           </Text>
         </View>
       ))}
@@ -72,38 +79,45 @@ export function HomeMetrics({ dashboard }: { dashboard: HqDashboardResponse }) {
 }
 
 const styles = StyleSheet.create({
-  grid: {
+  strip: {
     flexDirection: "row",
-    gap: spacing.sm,
+    paddingVertical: spacing.xs,
   },
-  metric: {
+  cell: {
     flex: 1,
-    minWidth: 0,
-    backgroundColor: colors.bgSurface,
-    borderRadius: radius.lg,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
+    gap: 2,
   },
-  icon: {
-    width: 28,
-    height: 28,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: radius.sm,
-    backgroundColor: colors.goldSoft,
-    marginBottom: spacing.sm,
+  cellDivider: {
+    borderLeftWidth: 1,
+    borderLeftColor: colors.border,
+    paddingLeft: spacing.md,
   },
   value: {
-    fontSize: 19,
-    lineHeight: 24,
-    fontWeight: "500",
     fontFamily: fonts.display,
-    color: colors.textOnNavy,
+    fontSize: 24,
+    lineHeight: 28,
+    color: colors.textPrimary,
   },
   label: {
-    ...typography.caption,
+    fontSize: 10,
+    lineHeight: 13,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
     color: colors.textMuted,
-    marginTop: 2,
+  },
+  delta: {
+    fontSize: 11,
+    lineHeight: 14,
+    fontWeight: "600",
+  },
+  up: {
+    color: colors.success,
+  },
+  down: {
+    color: colors.error,
+  },
+  muted: {
+    color: colors.textMuted,
   },
 });

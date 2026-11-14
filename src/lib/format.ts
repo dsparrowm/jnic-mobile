@@ -57,6 +57,19 @@ export function formatCount(value: number): string {
   return Number(value).toLocaleString();
 }
 
+export function formatShortWeekLabel(weekLabel: string): string {
+  const match = weekLabel.match(/(\d{1,2})\s+([A-Za-z]{3,})/);
+  if (match) return `${match[2].slice(0, 3)} ${match[1]}`;
+  return weekLabel;
+}
+
+export function todayWeekday(): string {
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    timeZone: "Africa/Lagos",
+  }).format(new Date());
+}
+
 export function formatMemberSince(value: string): string {
   return new Intl.DateTimeFormat("en-GB", {
     month: "long",
