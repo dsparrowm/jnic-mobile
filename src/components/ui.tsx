@@ -239,7 +239,17 @@ export function Chip({
   );
 }
 
-export function ChipRow({ children }: { children: React.ReactNode }) {
+export function ChipRow({
+  children,
+  wrap = false,
+}: {
+  children: React.ReactNode;
+  /** Wrap chips onto multiple rows — use for small, bounded sets so every option is visible. */
+  wrap?: boolean;
+}) {
+  if (wrap) {
+    return <View style={styles.chipRowWrap}>{children}</View>;
+  }
   return (
     <ScrollView
       horizontal
@@ -441,6 +451,14 @@ const styles = StyleSheet.create({
   chipRow: {
     flexDirection: "row",
     alignItems: "center",
+    gap: spacing.sm,
+    paddingVertical: 4,
+    paddingBottom: spacing.sm,
+  },
+  chipRowWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
     gap: spacing.sm,
     paddingVertical: 4,
     paddingBottom: spacing.sm,

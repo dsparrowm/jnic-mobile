@@ -56,6 +56,11 @@ export function formatMoney(value: number, currency = "NGN"): string {
   }
 }
 
+export function plural(count: number, noun: string): string {
+  const suffix = /(s|x|z|ch|sh)$/i.test(noun) ? "es" : "s";
+  return `${count} ${noun}${count === 1 ? "" : suffix}`;
+}
+
 export function formatCount(value: number): string {
   return Number(value).toLocaleString();
 }

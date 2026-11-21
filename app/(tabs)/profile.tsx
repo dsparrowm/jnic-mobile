@@ -13,7 +13,7 @@ import { ScreenErrorState, ScreenSkeleton } from "@/src/components/premium/state
 import { api, ApiError, type UserRecord } from "@/src/lib/api";
 import { buildAssignmentView } from "@/src/lib/assignment";
 import { isAdmin, isHqUser, isLeadPastor } from "@/src/lib/auth";
-import { formatMemberSince } from "@/src/lib/format";
+import { formatMemberSince, formatRole } from "@/src/lib/format";
 import { useProfilePicture } from "@/src/hooks/use-profile-picture";
 import { useAuth } from "@/src/lib/session";
 import { colors, layout, spacing, typography } from "@/src/theme/tokens";
@@ -136,10 +136,17 @@ export default function ProfileScreen() {
 
             <ProfileSection title="Assignment">
               <View style={styles.assignmentBody}>
-                <Text style={styles.assignmentTitle}>{assignment.title}</Text>
-                {assignment.meta ? (
-                  <Text style={styles.assignmentMeta}>{assignment.meta}</Text>
-                ) : null}
+                <ProfileInfoRow
+                  label="Role"
+                  value={formatRole(profile.role)}
+                />
+                <ProfileInfoRow
+                  label="Scope"
+                  value={[assignment.title, assignment.meta]
+                    .filter(Boolean)
+                    .join(" — ")}
+                  last={!assignment.footnote}
+                />
                 {assignment.footnote ? (
                   <Text style={styles.assignmentFootnote}>
                     {assignment.footnote}
@@ -194,15 +201,6 @@ const styles = StyleSheet.create({
   assignmentBody: {
     padding: spacing.md,
     gap: spacing.xs,
-  },
-  assignmentTitle: {
-    ...typography.callout,
-    color: colors.textPrimary,
-    fontWeight: "700",
-  },
-  assignmentMeta: {
-    ...typography.footnote,
-    color: colors.textMuted,
   },
   assignmentFootnote: {
     ...typography.caption,

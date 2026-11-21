@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import * as ImagePicker from "expo-image-picker";
-import { Alert } from "react-native";
+import { showAppAlert } from "@/src/components/premium/app-alert";
 import { api, ApiError } from "@/src/lib/api";
 import {
   normalizeContentType,
@@ -15,7 +15,7 @@ export function useProfilePicture(onUpdated: () => Promise<void>) {
   const pickAndUpload = useCallback(async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert(
+      void showAppAlert(
         "Photos access needed",
         "Allow photo library access to update your profile picture.",
       );
@@ -34,13 +34,13 @@ export function useProfilePicture(onUpdated: () => Promise<void>) {
     const asset = result.assets[0];
     const validationError = validateProfileImage(asset.fileSize, asset.mimeType);
     if (validationError) {
-      Alert.alert("Could not use photo", validationError);
+      void showAppAlert("Could not use photo", validationError);
       return;
     }
 
     const contentType = normalizeContentType(asset.mimeType);
     if (!contentType) {
-      Alert.alert("Could not use photo", "Please choose a JPG or PNG image.");
+      void showAppAlert("Could not use photo", "Please choose a JPG or PNG image.");
       return;
     }
 
@@ -71,7 +71,7 @@ export function useProfilePicture(onUpdated: () => Promise<void>) {
           : err instanceof Error
             ? err.message
             : "Upload failed";
-      Alert.alert("Upload failed", message);
+      void showAppAlert("Upload failed", message);
     } finally {
       setUploading(false);
     }

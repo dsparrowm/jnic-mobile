@@ -12,7 +12,7 @@ import { useAuth } from "@/src/lib/session";
 import { Field, GhostButton, PrimaryButton } from "@/src/components/ui";
 import { BottomSheet } from "@/src/components/premium/bottom-sheet";
 import { SheetHeader } from "@/src/components/premium/sheet-header";
-import { InlineNotice, ScreenSkeleton } from "@/src/components/premium/states";
+import { EmptyPanel, InlineNotice, ScreenSkeleton } from "@/src/components/premium/states";
 import { SectionHeader, SurfaceCard } from "@/src/components/premium/screen";
 import { WeeklyStackBar } from "@/src/components/weekly/stack-bar";
 import { colors, fonts, radius, spacing, typography } from "@/src/theme/tokens";
@@ -91,7 +91,10 @@ export default function DutiesScreen() {
     const scope = submitting.scopes[scopeIdx];
     if (!scope) return;
     const missing = submitting.fields.filter((f) => !answers[f.key]?.trim());
-    if (missing.length > submitting.fields.length) return;
+    if (missing.length === submitting.fields.length) {
+      setFormError("Fill at least one field before submitting.");
+      return;
+    }
     setSaving(true);
     setFormError(null);
     try {
@@ -136,20 +139,21 @@ export default function DutiesScreen() {
 
           <SectionHeader title="Due from me" />
           {templates.length === 0 ? (
-            <SurfaceCard>
-              <Text style={styles.emptyTitle}>
-                {user.directorate
+            <EmptyPanel
+              icon="clipboard-outline"
+              title={
+                user.directorate
                   ? `You are ${user.directorate.office
                       .toLowerCase()
                       .replace(/_/g, " ")} — ${user.directorate.directorateName}`
-                  : "No directorate seat yet"}
-              </Text>
-              <Text style={styles.empty}>
-                {user.directorate
+                  : "No directorate seat yet"
+              }
+              body={
+                user.directorate
                   ? "This seat has no reports due right now. Unit coordinators file D1/D2, desk heads file D3, and directors file D4–D6."
-                  : "D1–D6 reports appear here once HQ seats you in a directorate — as a unit coordinator, desk head or director. Your territorial (branch/zone/state) reports stay on the Weekly tab."}
-              </Text>
-            </SurfaceCard>
+                  : "D1–D6 reports appear here once HQ seats you in a directorate — as a unit coordinator, desk head or director. Your territorial (branch/zone/state) reports stay on the Weekly tab."
+              }
+            />
           ) : (
             templates.map((t) => (
               <SurfaceCard key={t.id} style={styles.card}>
@@ -222,7 +226,11 @@ export default function DutiesScreen() {
         </ScrollView>
       )}
 
-      <BottomSheet visible={!!submitting} onClose={() => setSubmitting(null)}>
+      <BottomSheet
+        visible={!!submitting}
+        onClose={() => setSubmitting(null)}
+        scrollable
+      >
         {submitting ? (
           <View>
             <SheetHeader
@@ -284,7 +292,7 @@ export default function DutiesScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bgBase },
   content: { paddingHorizontal: spacing.lg, gap: spacing.sm },
-  card: { gap: spacing.xs },
+  card: { padding: spacing.md, gap: spacing.xs },
   cardTop: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
   cardTitle: {
     fontFamily: fonts.semibold,
@@ -295,13 +303,6 @@ const styles = StyleSheet.create({
   scope: { ...typography.caption, color: colors.textMuted },
   dataRow: { ...typography.body, color: colors.textPrimary },
   dataKey: { fontFamily: fonts.medium, textTransform: "capitalize" },
-  emptyTitle: {
-    fontFamily: fonts.semibold,
-    fontSize: typography.title3.fontSize,
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
-  },
-  empty: { ...typography.body, color: colors.textMuted },
   scopePicker: {
     flexDirection: "row",
     flexWrap: "wrap",

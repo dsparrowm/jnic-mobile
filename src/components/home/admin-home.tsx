@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import type { HqHomeTask } from "@repo/types";
 import { api, type AuthUser } from "@/src/lib/api";
-import { formatCount } from "@/src/lib/format";
+import { formatCount, plural } from "@/src/lib/format";
 import { HomeHero } from "@/src/components/home/home-hero";
 import { HomeSkeleton } from "@/src/components/home/home-states";
 import { AttentionList } from "@/src/components/home/attention-list";
@@ -264,7 +264,7 @@ export function AdminHome({ user }: { user: AuthUser }) {
                   <Kpi
                     label="Branches"
                     value={formatCount(data.org.branches)}
-                    delta={`${data.org.states} states · ${data.org.zones} zones`}
+                    delta={`${plural(data.org.states, "state")} · ${plural(data.org.zones, "zone")}`}
                     tone="muted"
                     divider
                   />
@@ -283,14 +283,14 @@ export function AdminHome({ user }: { user: AuthUser }) {
                 <ManageRow
                   icon="business-outline"
                   title="Territory"
-                  detail={`${data.org.regions} regions · ${data.org.states} states · ${data.org.zones} zones · ${data.org.districts} districts · ${data.org.branches} branches`}
+                  detail={`${plural(data.org.regions, "region")} · ${plural(data.org.states, "state")} · ${plural(data.org.zones, "zone")} · ${plural(data.org.districts, "district")} · ${plural(data.org.branches, "branch")}`}
                   onPress={() => router.navigate("/org" as never)}
                 />
                 <View style={styles.rowDivider} />
                 <ManageRow
                   icon="layers-outline"
                   title="Directorates"
-                  detail={`${data.directorates.members} members across ${data.directorates.total} directorates`}
+                  detail={`${plural(data.directorates.members, "member")} across ${plural(data.directorates.total, "directorate")}`}
                   onPress={() =>
                     router.push({
                       pathname: "/org",

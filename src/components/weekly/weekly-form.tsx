@@ -559,7 +559,9 @@ export function WeeklyReportFields({
           onClose={() => setConfirmOpen(false)}
         />
         <Text style={styles.confirmMeta}>
-          {formatWeekEndingLabel(values.serviceDate)} · week ending {weekEnding}
+          {formatWeekEndingLabel(values.serviceDate) === weekEnding
+            ? `Service date ${weekEnding}`
+            : `${formatWeekEndingLabel(values.serviceDate)} · week ending ${weekEnding}`}
         </Text>
         {noService ? (
           <>
