@@ -428,9 +428,11 @@ const styles = StyleSheet.create({
   primaryBtn: {
     borderRadius: radius.md,
     paddingVertical: 16,
+    paddingHorizontal: spacing.lg,
     alignItems: "center",
     justifyContent: "center",
     minHeight: 54,
+    flexShrink: 0,
   },
   primaryBtnText: {
     ...typography.bodyStrong,
