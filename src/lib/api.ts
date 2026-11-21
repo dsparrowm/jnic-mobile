@@ -281,6 +281,14 @@ export interface OrgTreeResponse {
   unassignedStates: OrgState[];
 }
 
+export interface MonthlySummaryFiling {
+  newChurches: number;
+  welfareNote: string | null;
+  plansNote: string | null;
+  filedAt: string | null;
+  filedByName: string | null;
+}
+
 export interface MonthlySummaryRecord {
   id: string;
   month: number;
@@ -292,8 +300,47 @@ export interface MonthlySummaryRecord {
   returnNote?: string | null;
   returnedAt?: string | null;
   totals?: Record<string, unknown>;
+  coverage?: { branchesReporting: number; branchesTotal: number; weeklyReports: number };
+  reportingRate?: number | null;
+  filing?: MonthlySummaryFiling;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface QuarterlyCouncilResponse {
+  quarter: number;
+  year: number;
+  label: string;
+  months: Array<{
+    month: number;
+    monthLabel: string;
+    totals: Record<string, unknown>;
+    filing: {
+      filed: boolean;
+      filedByName: string | null;
+      filedAt: string | null;
+      newChurches: number;
+      welfareNote: string | null;
+      plansNote: string | null;
+    };
+    status: string;
+  }>;
+  totals: Record<string, unknown>;
+  territoryFilings: Array<{
+    scopeType: string;
+    scopeId: string;
+    scopeName: string;
+    filed: boolean;
+    filedByName: string | null;
+    filedAt: string | null;
+    status: string;
+  }>;
+  directorateReports: Array<{
+    directorateId: string;
+    name: string;
+    submitted: number;
+    reviewed: number;
+  }>;
 }
 
 export interface MonthlySummaryPendingResponse {
@@ -734,6 +781,18 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ note }),
     }),
+  fileMonthlySummary: (
+    id: string,
+    body: { newChurches?: number; welfareNote?: string; plansNote?: string },
+  ) =>
+    request<{ id: string; status: string }>(`/summaries/monthly/${id}/file`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  getQuarterlyCouncil: (quarter: number, year: number) =>
+    request<QuarterlyCouncilResponse>(
+      `/summaries/quarterly?quarter=${quarter}&year=${year}`,
+    ),
 
   listMonthlySummaries: (month: number, year: number) => {
     const params = new URLSearchParams({
