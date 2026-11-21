@@ -9,10 +9,12 @@ import {
   View,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { useRouter } from "expo-router";
 import { NIGERIAN_STATES } from "@repo/types";
 import {
   api,
   ApiError,
+  type DirectorateRecord,
   type OrgBranch,
   type OrgState,
   type OrgTreeResponse,
@@ -51,6 +53,7 @@ function BranchRow({ branch, label }: { branch: OrgBranch; label?: string }) {
 }
 
 export default function OrgScreen() {
+  const router = useRouter();
   const [tree, setTree] = useState<OrgTreeResponse>({
     regions: [],
     unassignedStates: [],
@@ -59,6 +62,9 @@ export default function OrgScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [view, setView] = useState<"territory" | "directorates">("territory");
+  const [directorates, setDirectorates] = useState<DirectorateRecord[]>([]);
+  const [dirLoaded, setDirLoaded] = useState(false);
 
   const [createKind, setCreateKind] = useState<CreateKind>(null);
   const [regionName, setRegionName] = useState("");
@@ -106,6 +112,12 @@ export default function OrgScreen() {
       setZoneStateId((prev) => prev || firstState?.id || "");
       setBranchStateId((prev) => prev || firstState?.id || "");
       setDistrictStateId((prev) => prev || firstState?.id || "");
+      try {
+        setDirectorates(await api.listDirectorates());
+        setDirLoaded(true);
+      } catch {
+        setDirLoaded(false);
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to load org tree");
     } finally {
@@ -339,6 +351,40 @@ export default function OrgScreen() {
         icon="business"
         right={<StatusPill label={`${allStates.length} states`} tone="info" />}
       />
+
+      <View style={styles.segment}>
+        <Pressable
+          style={[styles.segmentBtn, view === "territory" && styles.segmentBtnActive]}
+          onPress={() => setView("territory")}
+        >
+          <Text
+            style={[
+              styles.segmentText,
+              view === "territory" && styles.segmentTextActive,
+            ]}
+          >
+            Territory
+          </Text>
+        </Pressable>
+        <Pressable
+          style={[
+            styles.segmentBtn,
+            view === "directorates" && styles.segmentBtnActive,
+          ]}
+          onPress={() => setView("directorates")}
+        >
+          <Text
+            style={[
+              styles.segmentText,
+              view === "directorates" && styles.segmentTextActive,
+            ]}
+          >
+            Directorates
+          </Text>
+        </Pressable>
+      </View>
+
+      {view === "territory" ? (
       <ChipRow>
         <Pressable
           style={styles.secondaryChip}
@@ -371,11 +417,67 @@ export default function OrgScreen() {
           <Text style={styles.secondaryChipText}>+ Branch</Text>
         </Pressable>
       </ChipRow>
+      ) : null}
 
       {error ? <InlineNotice message={error} /> : null}
 
       {loading ? (
         <ScreenSkeleton rows={5} />
+      ) : view === "directorates" ? (
+        <ScrollView
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => {
+                setRefreshing(true);
+                void load();
+              }}
+              tintColor={colors.gold}
+              colors={[colors.gold]}
+            />
+          }
+          contentContainerStyle={{ paddingBottom: spacing.xl }}
+        >
+          {!dirLoaded || directorates.length === 0 ? (
+            <EmptyState
+              title="No directorates yet"
+              body="The ten directorates are created by the server seed. Redeploy the API to populate them."
+            />
+          ) : null}
+          {directorates.map((d) => (
+            <Pressable
+              key={d.id}
+              style={styles.dirCard}
+              onPress={() =>
+                router.push(`/directorates/${d.id}` as never)
+              }
+            >
+              <View style={styles.dirCardHead}>
+                <Ionicons
+                  name="layers-outline"
+                  size={16}
+                  color={colors.goldText}
+                />
+                <Text style={styles.dirCardName}>{d.name}</Text>
+              </View>
+              <Text style={styles.dirCardMeta}>
+                Director: {d.leadership.director?.name ?? "Vacant"}
+              </Text>
+              <Text style={styles.dirCardMeta}>
+                {d.deskCount} desks · {d.unitTypeCount} unit types ·{" "}
+                {d.memberCount} members
+              </Text>
+              <View style={styles.dirCardFooter}>
+                <Text style={styles.dirCardLink}>Open roster</Text>
+                <Ionicons
+                  name="chevron-forward"
+                  size={14}
+                  color={colors.goldText}
+                />
+              </View>
+            </Pressable>
+          ))}
+        </ScrollView>
       ) : (
         <ScrollView
           refreshControl={
@@ -631,6 +733,70 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bgBase,
     paddingHorizontal: layout.screenPad,
     paddingTop: spacing.xs,
+  },
+  segment: {
+    flexDirection: "row",
+    backgroundColor: colors.bgSurface,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 3,
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  segmentBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: radius.full,
+    alignItems: "center",
+  },
+  segmentBtnActive: {
+    backgroundColor: colors.gold,
+  },
+  segmentText: {
+    ...typography.footnote,
+    fontWeight: "600",
+    color: colors.textMuted,
+  },
+  segmentTextActive: {
+    color: colors.goldForeground,
+  },
+  dirCard: {
+    backgroundColor: colors.bgSurface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  dirCardHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
+  dirCardName: {
+    ...typography.body,
+    fontWeight: "700",
+    color: colors.textPrimary,
+    flex: 1,
+  },
+  dirCardMeta: {
+    ...typography.caption,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  dirCardFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 2,
+    marginTop: spacing.xs,
+  },
+  dirCardLink: {
+    ...typography.caption,
+    fontWeight: "700",
+    color: colors.goldText,
   },
   primaryChip: {
     backgroundColor: colors.gold,

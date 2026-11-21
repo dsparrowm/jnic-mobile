@@ -215,6 +215,66 @@ export interface ServiceUnitRecord {
   coordinator: { id: string; name: string } | null;
 }
 
+export interface DirectorateRecord {
+  id: string;
+  key: string;
+  name: string;
+  mandate: string | null;
+  deskCount: number;
+  unitTypeCount: number;
+  memberCount: number;
+  leadership: {
+    director: { id: string; name: string } | null;
+    deputyDirector: { id: string; name: string } | null;
+    secretary: { id: string; name: string } | null;
+  };
+}
+
+export interface DirectorateDesk {
+  id: string;
+  name: string;
+  duties: string[];
+}
+
+export interface DirectorateMember {
+  id: string;
+  office: string;
+  deskId: string | null;
+  agreedWeeklyHours: number | null;
+  termYears: number | null;
+  isActive: boolean;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    role: Role;
+    status: string;
+    title: string | null;
+    profilePicUrl: string | null;
+    branch: { id: string; name: string } | null;
+  };
+}
+
+export interface DirectorateDetail {
+  id: string;
+  key: string;
+  name: string;
+  mandate: string | null;
+  desks: DirectorateDesk[];
+  branchUnits: { id: string; name: string }[];
+  members: DirectorateMember[];
+}
+
+export interface AdminUserRecord {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+  status: string;
+  branch?: { id: string; name: string } | null;
+  branchName?: string | null;
+}
+
 export interface OrgTreeResponse {
   regions: OrgRegion[];
   unassignedStates: OrgState[];
@@ -586,6 +646,43 @@ export const api = {
     request<ServiceUnitRecord[]>(
       `/directorates/units?branchId=${encodeURIComponent(branchId)}`,
     ),
+
+  listAllServiceUnits: () =>
+    request<ServiceUnitRecord[]>("/directorates/units"),
+
+  listDirectorates: () => request<DirectorateRecord[]>("/directorates"),
+
+  getDirectorate: (id: string) =>
+    request<DirectorateDetail>(`/directorates/${encodeURIComponent(id)}`),
+
+  listAdminUsers: () => request<AdminUserRecord[]>("/users"),
+
+  upsertDirectorateAssignment: (
+    directorateId: string,
+    data: {
+      userId: string;
+      office: string;
+      deskId?: string;
+      agreedWeeklyHours?: number;
+      termYears?: number;
+    },
+  ) =>
+    request<unknown>(
+      `/directorates/${encodeURIComponent(directorateId)}/assignments`,
+      { method: "POST", body: JSON.stringify(data) },
+    ),
+
+  removeDirectorateAssignment: (assignmentId: string) =>
+    request<unknown>(
+      `/directorates/assignments/${encodeURIComponent(assignmentId)}`,
+      { method: "DELETE" },
+    ),
+
+  setServiceUnitCoordinator: (unitId: string, coordinatorId: string | null) =>
+    request<unknown>(`/directorates/units/${encodeURIComponent(unitId)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ coordinatorId }),
+    }),
 
   createRegion: (data: { name: string }) =>
     request<OrgRegion>("/org/regions", {
