@@ -15,7 +15,7 @@ import {
   getTodayInLagos,
   type WeeklyReportRecord,
 } from "@repo/types";
-import { api, ApiError } from "@/src/lib/api";
+import { api, ApiError, type ServiceUnitRecord } from "@/src/lib/api";
 import { canSubmitWeekly } from "@/src/lib/auth";
 import { useAuth } from "@/src/lib/session";
 import { PrimaryButton } from "@/src/components/ui";
@@ -34,6 +34,7 @@ export default function WeeklySubmitScreen() {
   const weekOf = params.weekOf || computeWeekOf(getTodayInLagos());
   const defaultServiceDate = useMemo(() => weekOf, [weekOf]);
   const [report, setReport] = useState<WeeklyReportRecord | null>(null);
+  const [serviceUnits, setServiceUnits] = useState<ServiceUnitRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +48,12 @@ export default function WeeklySubmitScreen() {
     try {
       const response = await api.listWeeklyReports({ weekOf, perPage: 1 });
       setReport(response.items[0] ?? null);
+      if (user?.branchId) {
+        api
+          .listServiceUnits(user.branchId)
+          .then(setServiceUnits)
+          .catch(() => {});
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not load this report.");
     } finally {
@@ -147,6 +154,11 @@ export default function WeeklySubmitScreen() {
                 existingReport={report}
                 defaultServiceDate={defaultServiceDate}
                 branchName={branchName}
+                serviceUnits={serviceUnits.map((u) => ({
+                  id: u.id,
+                  name: u.unitType.name,
+                  directorateName: u.directorate.name,
+                }))}
                 loading={saving}
                 error={error}
                 onSubmit={onSubmit}

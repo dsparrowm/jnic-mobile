@@ -163,6 +163,47 @@ export interface OrgRegion {
   states: OrgState[];
 }
 
+export interface ReportTemplateField {
+  key: string;
+  label: string;
+  type: "text" | "textarea" | "number";
+}
+
+export interface MyReportTemplate {
+  id: string;
+  code: string;
+  name: string;
+  level: "UNIT" | "DESK" | "DIRECTORATE" | "COUNCIL";
+  cadence: "WEEKLY" | "MONTHLY" | "QUARTERLY" | "ANNUAL";
+  dueDay: number | null;
+  fields: ReportTemplateField[];
+  directorate: { id: string; name: string };
+  scopes: { serviceUnitId?: string; deskId?: string; label: string }[];
+}
+
+export interface TemplateReportRecord {
+  id: string;
+  templateId: string;
+  periodKey: string;
+  status: string;
+  data: Record<string, unknown>;
+  createdAt: string;
+  template: { code: string; name: string; directorate: { name: string } };
+  serviceUnit?: {
+    unitType: { name: string };
+    branch: { name: string };
+  } | null;
+  submittedBy?: { id: string; name: string; role: string };
+}
+
+export interface ServiceUnitRecord {
+  id: string;
+  branch: { id: string; name: string };
+  unitType: { id: string; name: string };
+  directorate: { id: string; name: string };
+  coordinator: { id: string; name: string } | null;
+}
+
 export interface OrgTreeResponse {
   regions: OrgRegion[];
   unassignedStates: OrgState[];
@@ -507,6 +548,33 @@ export const api = {
     }),
 
   getOrgTree: () => request<OrgTreeResponse>("/org/tree"),
+  listMyReportTemplates: () =>
+    request<MyReportTemplate[]>("/report-templates/mine"),
+  listTemplateReviewQueue: () =>
+    request<TemplateReportRecord[]>("/report-templates/review-queue"),
+  listMyTemplateReports: () =>
+    request<TemplateReportRecord[]>("/report-templates/reports"),
+  submitTemplateReport: (
+    templateId: string,
+    body: {
+      periodKey: string;
+      scope: { serviceUnitId?: string; deskId?: string };
+      data: Record<string, unknown>;
+    },
+  ) =>
+    request<TemplateReportRecord>(`/report-templates/${templateId}/submit`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  reviewTemplateReport: (reportId: string, note?: string) =>
+    request<TemplateReportRecord>(`/report-templates/reports/${reportId}/review`, {
+      method: "POST",
+      body: JSON.stringify({ note }),
+    }),
+  listServiceUnits: (branchId: string) =>
+    request<ServiceUnitRecord[]>(
+      `/directorates/units?branchId=${encodeURIComponent(branchId)}`,
+    ),
 
   createRegion: (data: { name: string }) =>
     request<OrgRegion>("/org/regions", {

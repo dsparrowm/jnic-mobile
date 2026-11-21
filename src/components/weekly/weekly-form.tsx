@@ -104,6 +104,7 @@ export function WeeklyReportFields({
   existingReport,
   defaultServiceDate,
   branchName,
+  serviceUnits,
   loading,
   error,
   onSubmit,
@@ -111,6 +112,7 @@ export function WeeklyReportFields({
   existingReport?: WeeklyReportRecord | null;
   defaultServiceDate: string;
   branchName?: string | null;
+  serviceUnits?: { id: string; name: string; directorateName: string }[];
   loading?: boolean;
   error?: string | null;
   onSubmit: (values: WeeklyFormValues) => Promise<void>;
@@ -119,6 +121,13 @@ export function WeeklyReportFields({
   const [values, setValues] = useState<DraftValues>(() =>
     toDraft(existingReport, defaultServiceDate),
   );
+  const [activeUnitIds, setActiveUnitIds] = useState<string[]>(
+    () => existingReport?.attendance?.activeUnitIds ?? [],
+  );
+  const toggleUnit = (id: string) =>
+    setActiveUnitIds((current) =>
+      current.includes(id) ? current.filter((u) => u !== id) : [...current, id],
+    );
   const [noService, setNoService] = useState(() =>
     Boolean(existingReport?.noServiceNote),
   );
@@ -149,6 +158,7 @@ export function WeeklyReportFields({
   const converts = parseCount(values.newConverts);
   const followUps = parseCount(values.followUpVisits);
   const unitsActive = parseCount(values.unitsActive);
+  const hasUnitList = (serviceUnits?.length ?? 0) > 0;
   const outreach = parseCount(values.outreachHeld);
   const tithe = parseAmount(values.tithe);
   const offering = parseAmount(values.offering);
@@ -180,6 +190,7 @@ export function WeeklyReportFields({
         newConverts: 0,
         followUpVisits: 0,
         unitsActive: 0,
+        activeUnitIds: [],
         outreachHeld: 0,
         tithe: 0,
         offering: 0,
@@ -212,7 +223,8 @@ export function WeeklyReportFields({
       firstTimeVisitors: visitors ?? 0,
       newConverts: converts ?? 0,
       followUpVisits: followUps ?? 0,
-      unitsActive: unitsActive ?? 0,
+      unitsActive: hasUnitList ? activeUnitIds.length : (unitsActive ?? 0),
+      activeUnitIds: hasUnitList ? activeUnitIds : undefined,
       outreachHeld: outreach ?? 0,
       tithe,
       offering,
@@ -375,14 +387,45 @@ export function WeeklyReportFields({
           setValues((current) => ({ ...current, followUpVisits }))
         }
       />
-      <CountField
-        label="Service units active"
-        value={values.unitsActive}
-        disabled={disabled}
-        onChange={(unitsActive) =>
-          setValues((current) => ({ ...current, unitsActive }))
-        }
-      />
+      {hasUnitList ? (
+        <View style={styles.unitList}>
+          <Text style={styles.unitListTitle}>
+            Service units active ({activeUnitIds.length})
+          </Text>
+          {serviceUnits!.map((unit) => {
+            const checked = activeUnitIds.includes(unit.id);
+            return (
+              <Pressable
+                key={unit.id}
+                disabled={disabled}
+                onPress={() => toggleUnit(unit.id)}
+                style={[styles.unitRow, checked && styles.unitRowActive]}
+              >
+                <Ionicons
+                  name={checked ? "checkbox" : "square-outline"}
+                  size={20}
+                  color={checked ? colors.gold : colors.textMuted}
+                />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.unitName}>{unit.name}</Text>
+                  <Text style={styles.unitDirectorate}>
+                    {unit.directorateName}
+                  </Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : (
+        <CountField
+          label="Service units active"
+          value={values.unitsActive}
+          disabled={disabled}
+          onChange={(unitsActive) =>
+            setValues((current) => ({ ...current, unitsActive }))
+          }
+        />
+      )}
       <CountField
         label="Outreach held"
         value={values.outreachHeld}
@@ -607,6 +650,36 @@ function MoneyField({
 }
 
 const styles = StyleSheet.create({
+  unitList: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.sm,
+    gap: spacing.xs,
+  },
+  unitListTitle: {
+    fontFamily: fonts.semibold,
+    fontSize: typography.caption.fontSize,
+    color: colors.textMuted,
+    marginBottom: spacing.xs,
+  },
+  unitRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  unitRowActive: {},
+  unitName: {
+    fontFamily: fonts.medium,
+    fontSize: typography.body.fontSize,
+    color: colors.textPrimary,
+  },
+  unitDirectorate: {
+    fontFamily: fonts.regular,
+    fontSize: typography.caption.fontSize,
+    color: colors.textMuted,
+  },
   form: {
     gap: spacing.sm,
   },
