@@ -97,11 +97,11 @@ const styles = StyleSheet.create({
   },
   lightTitle: {
     ...typography.title2,
-    color: colors.navy,
+    color: colors.textPrimary,
   },
   lightSubtitle: {
     ...typography.callout,
-    color: colors.navy,
+    color: colors.textPrimary,
     marginTop: 2,
   },
   lightMeta: {

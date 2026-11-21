@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.bodyStrong,
-    color: colors.navy,
+    color: colors.textPrimary,
   },
   body: {
     ...typography.footnote,

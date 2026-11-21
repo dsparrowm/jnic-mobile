@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: radius.md,
-    backgroundColor: colors.navy,
+    backgroundColor: colors.gold,
     marginTop: spacing.md,
   },
   retryPressed: {
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   },
   retryText: {
     ...typography.bodyStrong,
-    color: colors.textOnNavy,
+    color: colors.goldForeground,
   },
   banner: {
     minHeight: 48,

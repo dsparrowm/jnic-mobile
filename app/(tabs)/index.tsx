@@ -2,11 +2,11 @@ import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useCallback, useRef } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
+import { isHqPastor,
   Role,
   type HqHomeTaskKind,
   type NotificationRecord,
-} from "@repo/types";
+ } from "@repo/types";
 import { AttentionList } from "@/src/components/home/attention-list";
 import { AttendanceTrend } from "@/src/components/home/attendance-trend";
 import { HomeHero } from "@/src/components/home/home-hero";
@@ -22,6 +22,7 @@ import { WeeklyHealthCard } from "@/src/components/home/weekly-health-card";
 import { NotificationBell } from "@/src/components/notifications/notification-bell";
 import { useHomeDashboard } from "@/src/hooks/use-home-dashboard";
 import { api } from "@/src/lib/api";
+import { formatShortWeekLabel, todayWeekday } from "@/src/lib/format";
 import { openNotificationTarget } from "@/src/lib/notifications";
 import { useAuth } from "@/src/lib/session";
 import { colors, layout, spacing } from "@/src/theme/tokens";
@@ -58,7 +59,7 @@ function HqHome() {
   useRefreshOnFocus(refresh);
 
   const openPrimaryAction = () => {
-    const route = data?.role === Role.LEAD_PASTOR ? "/approvals" : "/weekly";
+    const route = data?.role && isHqPastor(data.role) ? "/approvals" : "/weekly";
     router.navigate(route as never);
   };
 
@@ -88,12 +89,9 @@ function HqHome() {
       <HomeHero
         user={user}
         tone="light"
-        branchName={
-          user?.role === Role.LEAD_PASTOR ? "Lead Pastor" : "Headquarters"
-        }
         location={
           data?.weekLabel
-            ? `Week ending ${data.weekLabel}`
+            ? `${todayWeekday()} · Week ending ${formatShortWeekLabel(data.weekLabel)}`
             : "National operations"
         }
         topInset={insets.top}
@@ -129,9 +127,9 @@ function HqHome() {
               {refreshError ? (
                 <RefreshErrorBanner message={refreshError} />
               ) : null}
-              <WeeklyHealthCard dashboard={data} onPress={openPrimaryAction} />
               <HomeMetrics dashboard={data} />
               <AttentionList tasks={data.tasks} onTaskPress={openTask} />
+              <WeeklyHealthCard dashboard={data} onPress={openPrimaryAction} />
               <AttendanceTrend points={data.attendanceTrend} />
               <RecentActivity
                 items={data.recentActivity.items}

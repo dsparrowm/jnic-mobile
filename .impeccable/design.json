@@ -1,0 +1,161 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-14T09:20:00Z",
+  "title": "Design System: JNLOP Mobile",
+  "extensions": {
+    "colorMeta": {
+      "brass-gold": {
+        "role": "primary",
+        "displayName": "Brass Gold",
+        "canonical": "#C9A050"
+      },
+      "lamplight-gold": {
+        "role": "primary",
+        "displayName": "Lamplight Gold",
+        "canonical": "#D9B870"
+      },
+      "midnight-ink": {
+        "role": "neutral",
+        "displayName": "Midnight Ink",
+        "canonical": "#070D1F",
+        "tonalRamp": ["#070D1F", "#0D1730", "#131F42", "#16244B", "#1B2748"]
+      },
+      "signal-white": {
+        "role": "neutral",
+        "displayName": "Signal White",
+        "canonical": "#E9EDF7"
+      },
+      "slate-mute": {
+        "role": "neutral",
+        "displayName": "Slate Mute",
+        "canonical": "#7E8AAB"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Fraunces 500",
+        "purpose": "Numerals and the hero greeting only — never body copy."
+      },
+      "body": {
+        "displayName": "Plus Jakarta Sans",
+        "purpose": "All copy, rows, buttons, navigation."
+      },
+      "label": {
+        "displayName": "Overline",
+        "purpose": "Uppercase tracked labels, kickers, severity tags."
+      }
+    },
+    "shadows": [
+      {
+        "name": "ambient-soft",
+        "value": "0 8px 24px rgba(4,8,26,0.45)",
+        "purpose": "Featured status cards only (e.g. weekly-health ring card)."
+      },
+      {
+        "name": "ambient-float",
+        "value": "0 12px 28px rgba(4,8,26,0.6)",
+        "purpose": "Floating chrome — the pill tab bar and bottom sheets."
+      }
+    ],
+    "breakpoints": [
+      { "name": "phone", "value": "390px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Brass gold action; pressed dims and compresses slightly.",
+      "html": "<button class=\"ds-btn-primary\">Sign in</button>",
+      "css": ".ds-btn-primary { background: #C9A050; color: #0A1020; border: none; border-radius: 12px; padding: 16px 20px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; font-weight: 600; transition: opacity .15s, transform .15s; } .ds-btn-primary:hover { opacity: .92; } .ds-btn-primary:active { opacity: .88; transform: scale(.985); } .ds-btn-primary:disabled { opacity: .45; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary action; fills Slate Surface on press.",
+      "html": "<button class=\"ds-btn-ghost\">Not now</button>",
+      "css": ".ds-btn-ghost { background: transparent; color: #E9EDF7; border: none; border-radius: 12px; padding: 14px 20px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; font-weight: 600; transition: background .15s; } .ds-btn-ghost:hover, .ds-btn-ghost:active { background: #131F42; }"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Filter pill; active state flips to brass.",
+      "html": "<button class=\"ds-chip\">This week</button> <button class=\"ds-chip ds-chip-active\">November</button>",
+      "css": ".ds-chip { background: #0D1730; color: #E9EDF7; border: 1px solid #1B2748; border-radius: 999px; padding: 12px 14px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 600; } .ds-chip-active { background: #C9A050; border-color: #C9A050; color: #0A1020; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Slate well; gold border on focus.",
+      "html": "<input class=\"ds-input\" placeholder=\"you@jnic.org\"/>",
+      "css": ".ds-input { background: #131F42; color: #E9EDF7; border: 1px solid transparent; border-radius: 12px; padding: 14px 16px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; outline: none; } .ds-input:focus { background: #0D1730; border-color: #C9A050; } .ds-input::placeholder { color: #7E8AAB; }"
+    },
+    {
+      "name": "Feature Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Navy surface, generous radius; hairline row dividers inside.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-row\">Weekly health</div><div class=\"ds-card-row ds-card-row-div\">18 of 24 reports in</div></div>",
+      "css": ".ds-card { background: #0D1730; border-radius: 24px; padding: 16px; font-family: 'Plus Jakarta Sans', sans-serif; color: #E9EDF7; } .ds-card-row { padding: 12px 0; font-size: 15px; } .ds-card-row-div { border-top: 1px solid #141E3D; }"
+    },
+    {
+      "name": "Severity Tag",
+      "kind": "chip",
+      "refersTo": "severity-tag",
+      "description": "Uppercase tracked label on a soft semantic wash.",
+      "html": "<span class=\"ds-tag ds-tag-warn\">Pending</span> <span class=\"ds-tag ds-tag-urgent\">Urgent</span>",
+      "css": ".ds-tag { border-radius: 999px; padding: 6px 10px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; } .ds-tag-warn { color: #FCD34D; background: rgba(217,119,6,.2); } .ds-tag-urgent { color: #FCA5A5; background: rgba(220,38,38,.18); }"
+    },
+    {
+      "name": "Floating Tab Bar",
+      "kind": "nav",
+      "description": "Glassy navy pill floating over content; active item is a brass pill.",
+      "html": "<nav class=\"ds-tabbar\"><span class=\"ds-tab ds-tab-active\">Home</span><span class=\"ds-tab\">Reports</span><span class=\"ds-tab\">Org</span></nav>",
+      "css": ".ds-tabbar { display: flex; gap: 4px; align-items: center; background: rgba(22,36,75,.9); backdrop-filter: blur(16px); border-radius: 999px; padding: 6px; box-shadow: 0 12px 28px rgba(4,8,26,.6); width: max-content; } .ds-tab { padding: 10px 16px; border-radius: 999px; color: #7E8AAB; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 600; } .ds-tab-active { background: #C9A050; color: #0A1020; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Executive Brief",
+    "overview": "A boardroom briefing delivered after dark: a deep midnight field, quiet typographic columns, and a single brass voice that speaks only when it matters. Status is carried by typography and hairlines before color; gold marks the active tab, the coverage ring, and the call to action. Dense but never loud — every screen reads in seconds.",
+    "keyCharacteristics": [
+      "Full-bleed deep navy with tonal layering instead of shadows",
+      "One accent (brass gold) at ≤10% of any screen",
+      "Fraunces serif reserved for numerals and the greeting",
+      "Uppercase tracked overlines and hairlines instead of boxes and icons"
+    ],
+    "rules": [
+      {
+        "name": "The One Voice Rule",
+        "body": "Brass gold covers ≤10% of any screen — actions, active states, the key figure. Its rarity is the point; a second accent is never added.",
+        "section": "colors"
+      },
+      {
+        "name": "The Serif Is for Figures Rule",
+        "body": "Fraunces never renders body copy, buttons, or navigation — only numerals and the greeting.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "body": "A card at rest has no shadow. Elevation is earned by floating chrome or a featured status card only.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do render every numeric value in Fraunces.",
+      "Do keep brass gold to actions, active states, and the key figure.",
+      "Do separate sections with overline labels and hairlines, not nested cards.",
+      "Do express status as small-caps text tags on soft washes."
+    ],
+    "donts": [
+      "Don't place a kicker/eyebrow above a heading; the wordmark is identity.",
+      "Don't use gradients — text or surfaces.",
+      "Don't stack icon chips with headings inside a card.",
+      "Don't use rings, sparklines, or figures as decoration — data only.",
+      "Don't ship UI requiring a new native dependency; stay pure-RN for OTA."
+    ]
+  }
+}

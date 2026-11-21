@@ -148,7 +148,7 @@ export function PrimaryButton({
 }) {
   const bg =
     tone === "navy"
-      ? colors.navy
+      ? colors.navyMuted
       : tone === "danger"
         ? colors.error
         : colors.gold;
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
   },
   screenTitleText: {
     ...typography.title1,
-    color: colors.navy,
+    color: colors.textPrimary,
   },
   screenTitleSub: {
     ...typography.footnote,
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
   },
   ghostBtnText: {
     ...typography.bodyStrong,
-    color: colors.navy,
+    color: colors.textPrimary,
   },
   chipScroll: {
     flexGrow: 0,
@@ -457,8 +457,8 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   chipActive: {
-    backgroundColor: colors.navy,
-    borderColor: colors.navy,
+    backgroundColor: colors.gold,
+    borderColor: colors.gold,
   },
   chipText: {
     ...typography.footnote,
@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   chipTextActive: {
-    color: colors.textOnNavy,
+    color: colors.goldForeground,
   },
   group: {
     backgroundColor: colors.bgSurface,
@@ -528,7 +528,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   avatar: {
-    backgroundColor: colors.navy,
+    backgroundColor: colors.navyMuted,
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",

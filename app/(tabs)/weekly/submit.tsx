@@ -24,7 +24,7 @@ import { SurfaceCard } from "@/src/components/premium/screen";
 import { WeeklyReportFields, type WeeklyFormValues } from "@/src/components/weekly/weekly-form";
 import { WeeklyStackBar } from "@/src/components/weekly/stack-bar";
 import { formatCount, formatMoney } from "@/src/lib/format";
-import { colors, layout, spacing, typography } from "@/src/theme/tokens";
+import { colors, fonts, layout, spacing, typography } from "@/src/theme/tokens";
 
 export default function WeeklySubmitScreen() {
   const { user } = useAuth();
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
   },
   receiptTitle: {
     ...typography.title3,
-    color: colors.navy,
+    color: colors.textPrimary,
   },
   receiptRow: {
     flexDirection: "row",
@@ -192,8 +192,10 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   totalsValue: {
-    ...typography.title3,
-    color: colors.navy,
+    fontFamily: fonts.display,
+    fontSize: 24,
+    lineHeight: 28,
+    color: colors.textPrimary,
     marginTop: 2,
   },
 });

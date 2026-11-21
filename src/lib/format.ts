@@ -20,7 +20,10 @@ export function formatRoleShort(role?: string | null): string {
   if (role === Role.BRANCH_PASTOR) return "Branch";
   if (role === Role.ZONAL_PASTOR) return "Zonal";
   if (role === Role.STATE_PASTOR) return "State";
-  if (role === Role.LEAD_PASTOR) return "Lead";
+  if (role === Role.SENIOR_PASTOR) return "Senior";
+  if (role === Role.RESIDENT_PASTOR) return "Resident";
+  if (role === Role.REGIONAL_PASTOR) return "Regional";
+  if (role === Role.DISTRICT_PASTOR) return "District";
   if (role === Role.ADMIN) return "Admin";
   return formatRole(role);
 }
@@ -30,7 +33,7 @@ export function greetingName(user: AuthUser | null): string {
   const first = parts[0];
   if (first && !TITLE_WORDS.has(first.toLowerCase())) return first;
   if (user?.role === Role.ADMIN) return "Admin";
-  if (user?.role === Role.LEAD_PASTOR) return "Pastor";
+  if (user?.role === Role.SENIOR_PASTOR || user?.role === Role.RESIDENT_PASTOR) return "Pastor";
   return first ?? "there";
 }
 
@@ -57,10 +60,30 @@ export function formatCount(value: number): string {
   return Number(value).toLocaleString();
 }
 
+export function formatShortWeekLabel(weekLabel: string): string {
+  const match = weekLabel.match(/(\d{1,2})\s+([A-Za-z]{3,})/);
+  if (match) return `${match[2].slice(0, 3)} ${match[1]}`;
+  return weekLabel;
+}
+
+export function todayWeekday(): string {
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    timeZone: "Africa/Lagos",
+  }).format(new Date());
+}
+
 export function formatMemberSince(value: string): string {
   return new Intl.DateTimeFormat("en-GB", {
     month: "long",
     year: "numeric",
     timeZone: "Africa/Lagos",
   }).format(new Date(value));
+}
+
+export function humanizeStatus(value: string): string {
+  return value
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/^\w/, (c) => c.toUpperCase());
 }

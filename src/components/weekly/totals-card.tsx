@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 import type { WeeklyReportAttendance, WeeklyReportFinance } from "@repo/types";
 import { formatCount, formatMoney } from "@/src/lib/format";
 import { SurfaceCard } from "@/src/components/premium/screen";
-import { colors, spacing, typography } from "@/src/theme/tokens";
+import { colors, fonts, spacing, typography } from "@/src/theme/tokens";
 
 export function TotalsCard({
   title,
@@ -61,8 +61,10 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   value: {
-    ...typography.bodyStrong,
-    color: colors.navy,
+    fontFamily: fonts.display,
+    fontSize: 17,
+    lineHeight: 21,
+    color: colors.textPrimary,
     marginTop: 2,
   },
 });

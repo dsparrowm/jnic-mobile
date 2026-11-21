@@ -32,7 +32,7 @@ export function SheetHeader({
             pressed && !closeDisabled && styles.pressed,
           ]}
         >
-          <Ionicons name="close" size={20} color={colors.navy} />
+          <Ionicons name="close" size={20} color={colors.textPrimary} />
         </Pressable>
       </View>
     </View>
@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.title2,
-    color: colors.navy,
+    color: colors.textPrimary,
   },
   subtitle: {
     ...typography.footnote,

@@ -10,7 +10,13 @@ import {
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { NIGERIAN_STATES } from "@repo/types";
-import { api, ApiError, type OrgState } from "@/src/lib/api";
+import {
+  api,
+  ApiError,
+  type OrgBranch,
+  type OrgState,
+  type OrgTreeResponse,
+} from "@/src/lib/api";
 import {
   Chip,
   ChipRow,
@@ -32,50 +38,76 @@ import {
   typography,
 } from "@/src/theme/tokens";
 
-type CreateKind = "state" | "zone" | "branch" | null;
+type CreateKind = "region" | "state" | "zone" | "district" | "branch" | null;
+
+function BranchRow({ branch, label }: { branch: OrgBranch; label?: string }) {
+  return (
+    <View style={styles.branchRow}>
+      <Ionicons name="location-outline" size={15} color={colors.goldText} />
+      <Text style={styles.branchName}>{branch.name}</Text>
+      {label ? <Text style={styles.count}>{label}</Text> : null}
+    </View>
+  );
+}
 
 export default function OrgScreen() {
-  const [tree, setTree] = useState<OrgState[]>([]);
+  const [tree, setTree] = useState<OrgTreeResponse>({
+    regions: [],
+    unassignedStates: [],
+  });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [expandedStates, setExpandedStates] = useState<Record<string, boolean>>(
-    {},
-  );
-  const [expandedZones, setExpandedZones] = useState<Record<string, boolean>>(
-    {},
-  );
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const [createKind, setCreateKind] = useState<CreateKind>(null);
+  const [regionName, setRegionName] = useState("");
   const [stateName, setStateName] = useState<string>(NIGERIAN_STATES[0] ?? "");
+  const [stateRegionId, setStateRegionId] = useState("");
   const [zoneName, setZoneName] = useState("");
   const [zoneStateId, setZoneStateId] = useState("");
+  const [districtName, setDistrictName] = useState("");
+  const [districtStateId, setDistrictStateId] = useState("");
+  const [districtZoneId, setDistrictZoneId] = useState("");
   const [branchName, setBranchName] = useState("");
   const [branchAddress, setBranchAddress] = useState("");
   const [branchZoneId, setBranchZoneId] = useState("");
+  const [branchDistrictId, setBranchDistrictId] = useState("");
   const [branchStateId, setBranchStateId] = useState("");
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const zonesForBranch = useMemo(() => {
-    const state = tree.find((s) => s.id === branchStateId);
-    return state?.zones ?? [];
-  }, [tree, branchStateId]);
+  const allStates = useMemo(
+    () => [...tree.unassignedStates, ...tree.regions.flatMap((r) => r.states)],
+    [tree],
+  );
+
+  const zonesForBranch = useMemo(
+    () => allStates.find((s) => s.id === branchStateId)?.zones ?? [],
+    [allStates, branchStateId],
+  );
+
+  const zonesForDistrict = useMemo(
+    () => allStates.find((s) => s.id === districtStateId)?.zones ?? [],
+    [allStates, districtStateId],
+  );
+
+  const districtsForBranch = useMemo(
+    () => zonesForBranch.find((z) => z.id === branchZoneId)?.districts ?? [],
+    [zonesForBranch, branchZoneId],
+  );
 
   const load = useCallback(async () => {
     setError(null);
     try {
       const data = await api.getOrgTree();
       setTree(data);
-      setZoneStateId((prev) => prev || data[0]?.id || "");
-      setBranchStateId((prev) => {
-        if (prev) return prev;
-        return data[0]?.id || "";
-      });
+      const firstState = data.unassignedStates[0] ?? data.regions[0]?.states[0];
+      setZoneStateId((prev) => prev || firstState?.id || "");
+      setBranchStateId((prev) => prev || firstState?.id || "");
+      setDistrictStateId((prev) => prev || firstState?.id || "");
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : "Failed to load org tree",
-      );
+      setError(err instanceof ApiError ? err.message : "Failed to load org tree");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -86,15 +118,32 @@ export default function OrgScreen() {
     void load();
   }, [load]);
 
+  function toggle(id: string) {
+    setExpanded((e) => ({ ...e, [id]: !e[id] }));
+  }
+
   function openCreate(kind: CreateKind) {
     setFormError(null);
     setCreateKind(kind);
   }
 
+  function resetForm() {
+    setCreateKind(null);
+    setRegionName("");
+    setZoneName("");
+    setDistrictName("");
+    setBranchName("");
+    setBranchAddress("");
+    setStateName(NIGERIAN_STATES[0] ?? "");
+    setFormError(null);
+  }
+
   function requestCloseCreate() {
     if (busy) return;
     const dirty =
+      regionName.trim().length > 0 ||
       zoneName.trim().length > 0 ||
+      districtName.trim().length > 0 ||
       branchName.trim().length > 0 ||
       branchAddress.trim().length > 0 ||
       stateName !== (NIGERIAN_STATES[0] ?? "");
@@ -107,18 +156,7 @@ export default function OrgScreen() {
       "The organisation details you entered will be lost.",
       [
         { text: "Keep editing", style: "cancel" },
-        {
-          text: "Discard",
-          style: "destructive",
-          onPress: () => {
-            setCreateKind(null);
-            setZoneName("");
-            setBranchName("");
-            setBranchAddress("");
-            setStateName(NIGERIAN_STATES[0] ?? "");
-            setFormError(null);
-          },
-        },
+        { text: "Discard", style: "destructive", onPress: resetForm },
       ],
     );
   }
@@ -127,14 +165,32 @@ export default function OrgScreen() {
     setFormError(null);
     setBusy(true);
     try {
-      if (createKind === "state") {
-        await api.createState({ name: stateName });
+      if (createKind === "region") {
+        if (!regionName.trim()) {
+          setFormError("Region name is required.");
+          return;
+        }
+        await api.createRegion({ name: regionName.trim() });
+      } else if (createKind === "state") {
+        await api.createState({
+          name: stateName,
+          regionId: stateRegionId || undefined,
+        });
       } else if (createKind === "zone") {
         if (!zoneName.trim() || !zoneStateId) {
           setFormError("Zone name and state are required.");
           return;
         }
         await api.createZone({ name: zoneName.trim(), stateId: zoneStateId });
+      } else if (createKind === "district") {
+        if (!districtName.trim() || !districtZoneId) {
+          setFormError("District name and zone are required.");
+          return;
+        }
+        await api.createDistrict({
+          name: districtName.trim(),
+          zoneId: districtZoneId,
+        });
       } else if (createKind === "branch") {
         if (!branchName.trim() || !branchStateId) {
           setFormError("Branch name and state are required.");
@@ -144,15 +200,12 @@ export default function OrgScreen() {
           name: branchName.trim(),
           stateId: branchStateId,
           zoneId: branchZoneId || undefined,
+          districtId: branchDistrictId || undefined,
           address: branchAddress.trim() || undefined,
         });
       }
-      setCreateKind(null);
-      setZoneName("");
-      setBranchName("");
-      setBranchAddress("");
+      resetForm();
       await load();
-      Alert.alert("Created", "Organization unit saved.");
     } catch (err) {
       setFormError(err instanceof ApiError ? err.message : "Create failed");
     } finally {
@@ -160,15 +213,139 @@ export default function OrgScreen() {
     }
   }
 
+  function renderBranches(branches: OrgBranch[]) {
+    return branches.map((branch) => <BranchRow key={branch.id} branch={branch} />);
+  }
+
+  function renderState(state: OrgState) {
+    const open = expanded[state.id] ?? false;
+    const branchCount =
+      state.zones.reduce(
+        (n, z) => n + z.branches.length + z.districts.reduce((m, d) => m + d.branches.length, 0),
+        0,
+      ) + (state.branches ?? []).length;
+    return (
+      <View key={state.id} style={styles.node}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: open }}
+          onPress={() => toggle(state.id)}
+          style={styles.nodeHeader}
+        >
+          <View style={styles.nodeLabel}>
+            <Ionicons
+              name={open ? "chevron-down" : "chevron-forward"}
+              size={17}
+              color={colors.textMuted}
+            />
+            <Text style={styles.stateName}>{state.name}</Text>
+          </View>
+          <Text style={styles.count}>
+            {state.zones.length} zones · {branchCount} branches
+          </Text>
+        </Pressable>
+        {open ? (
+          <>
+            {state.zones.map((zone) => {
+              const zoneOpen = expanded[zone.id] ?? false;
+              const zoneBranchCount =
+                zone.districts.reduce((n, d) => n + d.branches.length, 0) +
+                zone.branches.length;
+              return (
+                <View key={zone.id} style={styles.zoneBlock}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded: zoneOpen }}
+                    onPress={() => toggle(zone.id)}
+                    style={styles.nodeHeader}
+                  >
+                    <View style={styles.nodeLabel}>
+                      <Ionicons
+                        name={zoneOpen ? "chevron-down" : "chevron-forward"}
+                        size={15}
+                        color={colors.textPrimary}
+                      />
+                      <Text style={styles.zoneName}>{zone.name}</Text>
+                    </View>
+                    <Text style={styles.count}>
+                      {zone.districts.length > 0
+                        ? `${zone.districts.length} districts · `
+                        : ""}
+                      {zoneBranchCount} branches
+                    </Text>
+                  </Pressable>
+                  {zoneOpen ? (
+                    <>
+                      {zone.districts.map((district) => {
+                        const districtOpen = expanded[district.id] ?? false;
+                        return (
+                          <View key={district.id} style={styles.districtBlock}>
+                            <Pressable
+                              accessibilityRole="button"
+                              accessibilityState={{ expanded: districtOpen }}
+                              onPress={() => toggle(district.id)}
+                              style={styles.nodeHeader}
+                            >
+                              <View style={styles.nodeLabel}>
+                                <Ionicons
+                                  name={
+                                    districtOpen
+                                      ? "chevron-down"
+                                      : "chevron-forward"
+                                  }
+                                  size={14}
+                                  color={colors.textMuted}
+                                />
+                                <Text style={styles.districtName}>
+                                  {district.name}
+                                </Text>
+                              </View>
+                              <Text style={styles.count}>
+                                {district.branches.length} branches
+                              </Text>
+                            </Pressable>
+                            {districtOpen
+                              ? renderBranches(district.branches)
+                              : null}
+                          </View>
+                        );
+                      })}
+                      {zone.branches.map((branch) => (
+                        <BranchRow
+                          key={branch.id}
+                          branch={branch}
+                          label="No district"
+                        />
+                      ))}
+                    </>
+                  ) : null}
+                </View>
+              );
+            })}
+            {(state.branches ?? []).map((branch) => (
+              <BranchRow key={branch.id} branch={branch} label="No zone" />
+            ))}
+          </>
+        ) : null}
+      </View>
+    );
+  }
+
   return (
     <View style={styles.root}>
       <PremiumHeader
         title="Organization"
-        subtitle="States, zones, and branches"
+        subtitle="Regions, states, zones, districts, and branches"
         icon="business"
-        right={<StatusPill label={`${tree.length} states`} tone="warning" />}
+        right={<StatusPill label={`${allStates.length} states`} tone="info" />}
       />
       <ChipRow>
+        <Pressable
+          style={styles.secondaryChip}
+          onPress={() => openCreate("region")}
+        >
+          <Text style={styles.secondaryChipText}>+ Region</Text>
+        </Pressable>
         <Pressable
           style={styles.primaryChip}
           onPress={() => openCreate("state")}
@@ -180,6 +357,12 @@ export default function OrgScreen() {
           onPress={() => openCreate("zone")}
         >
           <Text style={styles.secondaryChipText}>+ Zone</Text>
+        </Pressable>
+        <Pressable
+          style={styles.secondaryChip}
+          onPress={() => openCreate("district")}
+        >
+          <Text style={styles.secondaryChipText}>+ District</Text>
         </Pressable>
         <Pressable
           style={styles.secondaryChip}
@@ -208,98 +391,23 @@ export default function OrgScreen() {
           }
           contentContainerStyle={{ paddingBottom: spacing.xl }}
         >
-          {tree.length === 0 ? (
+          {allStates.length === 0 && tree.regions.length === 0 ? (
             <EmptyState
-              title="No states yet"
-              body="Create the first state to start building the hierarchy."
+              title="No hierarchy yet"
+              body="Create a region and a state to start building the hierarchy."
             />
           ) : null}
-          {tree.map((state) => {
-            const open = expandedStates[state.id] ?? true;
-            return (
-              <View key={state.id} style={styles.node}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityState={{ expanded: open }}
-                  onPress={() =>
-                    setExpandedStates((s) => ({ ...s, [state.id]: !open }))
-                  }
-                  style={styles.nodeHeader}
-                >
-                  <View style={styles.nodeLabel}>
-                    <Ionicons
-                      name={open ? "chevron-down" : "chevron-forward"}
-                      size={17}
-                      color={colors.navy}
-                    />
-                    <Text style={styles.stateName}>{state.name}</Text>
-                  </View>
-                  <Text style={styles.count}>{state.zones.length} zones</Text>
-                </Pressable>
-                {open ? (
-                  <>
-                    {state.zones.map((zone) => {
-                      const zoneOpen = expandedZones[zone.id] ?? false;
-                      return (
-                        <View key={zone.id} style={styles.zoneBlock}>
-                          <Pressable
-                            accessibilityRole="button"
-                            accessibilityState={{ expanded: zoneOpen }}
-                            onPress={() =>
-                              setExpandedZones((z) => ({
-                                ...z,
-                                [zone.id]: !zoneOpen,
-                              }))
-                            }
-                            style={styles.nodeHeader}
-                          >
-                            <View style={styles.nodeLabel}>
-                              <Ionicons
-                                name={
-                                  zoneOpen ? "chevron-down" : "chevron-forward"
-                                }
-                                size={15}
-                                color={colors.textPrimary}
-                              />
-                              <Text style={styles.zoneName}>{zone.name}</Text>
-                            </View>
-                            <Text style={styles.count}>
-                              {zone.branches.length} branches
-                            </Text>
-                          </Pressable>
-                          {zoneOpen
-                            ? zone.branches.map((branch) => (
-                                <View key={branch.id} style={styles.branchRow}>
-                                  <Ionicons
-                                    name="location-outline"
-                                    size={15}
-                                    color={colors.goldText}
-                                  />
-                                  <Text style={styles.branchName}>
-                                    {branch.name}
-                                  </Text>
-                                </View>
-                              ))
-                            : null}
-                        </View>
-                      );
-                    })}
-                    {(state.branches ?? []).map((branch) => (
-                      <View key={branch.id} style={styles.branchRow}>
-                        <Ionicons
-                          name="location-outline"
-                          size={15}
-                          color={colors.goldText}
-                        />
-                        <Text style={styles.branchName}>{branch.name}</Text>
-                        <Text style={styles.count}>No zone</Text>
-                      </View>
-                    ))}
-                  </>
-                ) : null}
+          {tree.regions.map((region) => (
+            <View key={region.id} style={{ marginBottom: spacing.xs }}>
+              <View style={styles.regionHeader}>
+                <Ionicons name="globe-outline" size={16} color={colors.goldText} />
+                <Text style={styles.regionName}>{region.name}</Text>
+                <Text style={styles.count}>{region.states.length} states</Text>
               </View>
-            );
-          })}
+              {region.states.map(renderState)}
+            </View>
+          ))}
+          {tree.unassignedStates.map(renderState)}
         </ScrollView>
       )}
 
@@ -309,29 +417,45 @@ export default function OrgScreen() {
         scrollable
       >
         <SheetHeader
-          title={`Create ${
-            createKind === "state"
-              ? "state"
-              : createKind === "zone"
-                ? "zone"
-                : "branch"
-          }`}
+          title={`Create ${createKind ?? ""}`}
           subtitle="Add a new unit to the JNIC hierarchy."
           onClose={requestCloseCreate}
           closeDisabled={busy}
         />
 
+        {createKind === "region" ? (
+          <Field
+            label="Region name"
+            value={regionName}
+            onChangeText={setRegionName}
+            placeholder="e.g. National Region"
+          />
+        ) : null}
+
         {createKind === "state" ? (
           <>
+            <Text style={styles.label}>Region (optional)</Text>
+            <ChipRow>
+              <Chip
+                label="No region"
+                active={!stateRegionId}
+                onPress={() => setStateRegionId("")}
+              />
+              {tree.regions.map((r) => (
+                <Chip
+                  key={r.id}
+                  label={r.name}
+                  active={stateRegionId === r.id}
+                  onPress={() => setStateRegionId(r.id)}
+                />
+              ))}
+            </ChipRow>
             <Text style={styles.label}>Nigerian state</Text>
             <ScrollView style={{ maxHeight: 280 }}>
               {NIGERIAN_STATES.map((name) => (
                 <Pressable
                   key={name}
-                  style={[
-                    styles.option,
-                    stateName === name && styles.optionActive,
-                  ]}
+                  style={[styles.option, stateName === name && styles.optionActive]}
                   onPress={() => setStateName(name)}
                 >
                   <Text
@@ -352,7 +476,7 @@ export default function OrgScreen() {
           <>
             <Text style={styles.label}>Parent state</Text>
             <ChipRow>
-              {tree.map((s) => (
+              {allStates.map((s) => (
                 <Chip
                   key={s.id}
                   label={s.name}
@@ -370,11 +494,47 @@ export default function OrgScreen() {
           </>
         ) : null}
 
+        {createKind === "district" ? (
+          <>
+            <Text style={styles.label}>Parent state</Text>
+            <ChipRow>
+              {allStates.map((s) => (
+                <Chip
+                  key={s.id}
+                  label={s.name}
+                  active={districtStateId === s.id}
+                  onPress={() => {
+                    setDistrictStateId(s.id);
+                    setDistrictZoneId("");
+                  }}
+                />
+              ))}
+            </ChipRow>
+            <Text style={styles.label}>Parent zone</Text>
+            <ChipRow>
+              {zonesForDistrict.map((z) => (
+                <Chip
+                  key={z.id}
+                  label={z.name}
+                  active={districtZoneId === z.id}
+                  onPress={() => setDistrictZoneId(z.id)}
+                />
+              ))}
+            </ChipRow>
+            <Field
+              label="District name"
+              value={districtName}
+              onChangeText={setDistrictName}
+              placeholder="e.g. Lagos Island"
+            />
+          </>
+        ) : null}
+
         {createKind === "branch" ? (
           <>
             <Text style={styles.label}>State</Text>
             <ChipRow>
-              {tree.map((s) => (
+              {allStates.map((s) => (
                 <Chip
                   key={s.id}
                   label={s.name}
@@ -382,6 +542,7 @@ export default function OrgScreen() {
                   onPress={() => {
                     setBranchStateId(s.id);
                     setBranchZoneId("");
+                    setBranchDistrictId("");
                   }}
                 />
               ))}
@@ -391,17 +552,43 @@ export default function OrgScreen() {
               <Chip
                 label="No zone"
                 active={!branchZoneId}
-                onPress={() => setBranchZoneId("")}
+                onPress={() => {
+                  setBranchZoneId("");
+                  setBranchDistrictId("");
+                }}
               />
               {zonesForBranch.map((z) => (
                 <Chip
                   key={z.id}
                   label={z.name}
                   active={branchZoneId === z.id}
-                  onPress={() => setBranchZoneId(z.id)}
+                  onPress={() => {
+                    setBranchZoneId(z.id);
+                    setBranchDistrictId("");
+                  }}
                 />
               ))}
             </ChipRow>
+            {branchZoneId && districtsForBranch.length > 0 ? (
+              <>
+                <Text style={styles.label}>District (optional)</Text>
+                <ChipRow>
+                  <Chip
+                    label="No district"
+                    active={!branchDistrictId}
+                    onPress={() => setBranchDistrictId("")}
+                  />
+                  {districtsForBranch.map((d) => (
+                    <Chip
+                      key={d.id}
+                      label={d.name}
+                      active={branchDistrictId === d.id}
+                      onPress={() => setBranchDistrictId(d.id)}
+                    />
+                  ))}
+                </ChipRow>
+              </>
+            ) : null}
             <Field
               label="Branch name"
               value={branchName}
@@ -445,13 +632,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.screenPad,
     paddingTop: spacing.xs,
   },
-  actions: {
-    flexDirection: "row",
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
   primaryChip: {
-    backgroundColor: colors.navy,
+    backgroundColor: colors.gold,
     borderRadius: radius.full,
     paddingHorizontal: 16,
     paddingVertical: 10,
@@ -460,7 +642,7 @@ const styles = StyleSheet.create({
   primaryChipText: {
     ...typography.footnote,
     fontWeight: "700",
-    color: colors.textOnNavy,
+    color: colors.goldForeground,
   },
   secondaryChip: {
     backgroundColor: colors.bgSurface,
@@ -474,7 +656,7 @@ const styles = StyleSheet.create({
   secondaryChipText: {
     ...typography.footnote,
     fontWeight: "600",
-    color: colors.navy,
+    color: colors.textPrimary,
   },
   node: {
     backgroundColor: colors.bgSurface,
@@ -495,15 +677,36 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.sm,
   },
+  regionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xs,
+  },
+  regionName: {
+    ...typography.footnote,
+    fontWeight: "700",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+    color: colors.goldText,
+    flex: 1,
+  },
   stateName: {
     ...typography.bodyStrong,
-    color: colors.navy,
+    color: colors.textPrimary,
   },
   zoneBlock: { marginTop: spacing.sm, paddingLeft: spacing.xs },
   zoneName: {
     ...typography.callout,
     fontWeight: "600",
     color: colors.textPrimary,
+  },
+  districtBlock: { marginTop: spacing.xs, paddingLeft: spacing.md },
+  districtName: {
+    ...typography.footnote,
+    fontWeight: "600",
+    color: colors.textMuted,
   },
   branchRow: {
     minHeight: 38,
@@ -520,16 +723,6 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textMuted,
   },
-  error: {
-    ...typography.footnote,
-    color: colors.error,
-    marginVertical: spacing.sm,
-  },
-  modalTitle: {
-    ...typography.title2,
-    color: colors.navy,
-    marginBottom: spacing.md,
-  },
   label: {
     ...typography.caption,
     color: colors.textMuted,
@@ -544,7 +737,7 @@ const styles = StyleSheet.create({
   },
   optionActive: { backgroundColor: colors.bgSubtle },
   optionText: { ...typography.body, color: colors.textPrimary },
-  optionTextActive: { fontWeight: "600", color: colors.navy },
+  optionTextActive: { fontWeight: "600", color: colors.textPrimary },
   modalActions: {
     flexDirection: "row",
     gap: spacing.sm,

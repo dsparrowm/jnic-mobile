@@ -32,7 +32,7 @@ export function NotificationBell({
       <Ionicons
         name={unreadCount > 0 ? "notifications" : "notifications-outline"}
         size={22}
-        color={onNavy ? colors.gold : colors.navy}
+        color={onNavy ? colors.gold : colors.textPrimary}
       />
       {unreadCount > 0 ? (
         <View style={styles.badge}>
@@ -54,7 +54,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   buttonLight: {
-    backgroundColor: colors.bgSurface,
+    backgroundColor: colors.whiteGlow,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
   buttonNavy: {
     backgroundColor: "rgba(255,255,255,0.08)",
@@ -79,6 +81,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 12,
     fontWeight: "700",
-    color: colors.navy,
+    color: colors.goldForeground,
   },
 });

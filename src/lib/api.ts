@@ -112,26 +112,58 @@ export interface PastorFilters {
   perPage?: number;
 }
 
+export interface OrgPastorRef {
+  id: string;
+  name: string;
+  profilePicUrl: string | null;
+}
+
 export interface OrgBranch {
   id: string;
   name: string;
   zoneId: string | null;
+  districtId: string | null;
   stateId?: string;
   address: string | null;
+  pastor?: OrgPastorRef | null;
+}
+
+export interface OrgDistrict {
+  id: string;
+  name: string;
+  zoneId: string;
+  pastor?: OrgPastorRef | null;
+  branches: OrgBranch[];
 }
 
 export interface OrgZone {
   id: string;
   name: string;
   stateId: string;
+  pastor?: OrgPastorRef | null;
+  districts: OrgDistrict[];
   branches: OrgBranch[];
 }
 
 export interface OrgState {
   id: string;
   name: string;
+  regionId: string | null;
+  pastor?: OrgPastorRef | null;
   zones: OrgZone[];
   branches?: OrgBranch[];
+}
+
+export interface OrgRegion {
+  id: string;
+  name: string;
+  pastor?: OrgPastorRef | null;
+  states: OrgState[];
+}
+
+export interface OrgTreeResponse {
+  regions: OrgRegion[];
+  unassignedStates: OrgState[];
 }
 
 export interface MonthlySummaryRecord {
@@ -142,6 +174,8 @@ export interface MonthlySummaryRecord {
   scopeId: string | null;
   scopeName?: string;
   status: string;
+  returnNote?: string | null;
+  returnedAt?: string | null;
   totals?: Record<string, unknown>;
   createdAt?: string;
   updatedAt?: string;
@@ -459,7 +493,9 @@ export const api = {
     data: {
       role?: Role;
       stateId?: string | null;
+      regionId?: string | null;
       zoneId?: string | null;
+      districtId?: string | null;
       branchId?: string | null;
     },
   ) =>
@@ -468,10 +504,22 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
-  getOrgTree: () => request<OrgState[]>("/org/tree"),
+  getOrgTree: () => request<OrgTreeResponse>("/org/tree"),
 
-  createState: (data: { name: string }) =>
+  createRegion: (data: { name: string }) =>
+    request<OrgRegion>("/org/regions", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  createState: (data: { name: string; regionId?: string }) =>
     request<OrgState>("/org/states", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  createDistrict: (data: { name: string; zoneId: string }) =>
+    request<OrgDistrict>("/org/districts", {
       method: "POST",
       body: JSON.stringify(data),
     }),
@@ -486,6 +534,7 @@ export const api = {
     name: string;
     stateId: string;
     zoneId?: string;
+    districtId?: string;
     address?: string;
   }) =>
     request<OrgBranch>("/org/branches", {
@@ -499,6 +548,12 @@ export const api = {
   approveMonthlySummary: (id: string) =>
     request<{ id: string; status: string }>(`/summaries/monthly/${id}/approve`, {
       method: "POST",
+    }),
+
+  returnMonthlySummary: (id: string, note?: string) =>
+    request<{ id: string; status: string }>(`/summaries/monthly/${id}/return`, {
+      method: "POST",
+      body: JSON.stringify({ note }),
     }),
 
   listMonthlySummaries: (month: number, year: number) => {

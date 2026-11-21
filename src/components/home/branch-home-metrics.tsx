@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
   },
   value: {
     ...typography.callout,
-    color: colors.navy,
+    color: colors.textPrimary,
     fontWeight: "700",
   },
   divider: {

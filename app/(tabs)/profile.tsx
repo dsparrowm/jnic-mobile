@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
   },
   assignmentTitle: {
     ...typography.callout,
-    color: colors.navy,
+    color: colors.textPrimary,
     fontWeight: "700",
   },
   assignmentMeta: {

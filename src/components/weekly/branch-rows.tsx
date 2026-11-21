@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
   },
   countValue: {
     ...typography.title3,
-    color: colors.navy,
+    color: colors.textPrimary,
   },
   countLabel: {
     ...typography.caption,

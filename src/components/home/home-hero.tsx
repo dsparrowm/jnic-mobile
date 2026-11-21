@@ -10,6 +10,7 @@ import { isHqUser } from "@/src/lib/auth";
 import { Avatar } from "@/src/components/ui";
 import {
   colors,
+  fonts,
   layout,
   radius,
   spacing,
@@ -39,38 +40,27 @@ export function HomeHero({
   const name = greetingName(user);
 
   if (light) {
-    const subtitle = branchName ?? statusLine;
+    const metaLine = [branchName ?? statusLine, location]
+      .filter(Boolean)
+      .join("  ·  ");
 
     return (
-      <View style={[styles.lightHero, { paddingTop: topInset + spacing.md }]}>
+      <View style={[styles.lightHero, { paddingTop: topInset + spacing.lg }]}>
         {trailing ? (
           <View style={[styles.trailingAnchor, { top: topInset + spacing.sm }]}>
             {trailing}
           </View>
         ) : null}
-        <View
-          style={[
-            styles.identity,
-            trailing ? styles.identityWithTrailing : undefined,
-          ]}
-        >
-          <Avatar name={user?.name} imageUri={user?.profilePicUrl} size={44} />
-          <View style={styles.copy}>
-            <Text style={styles.lightGreeting}>
-              {timeOfDayGreeting()}, {name}
-            </Text>
-            {subtitle ? (
-              <Text style={styles.lightSubtitle} numberOfLines={1}>
-                {subtitle}
-              </Text>
-            ) : null}
-            {location ? (
-              <Text style={styles.lightMeta} numberOfLines={1}>
-                {location}
-              </Text>
-            ) : null}
-          </View>
-        </View>
+        <Text style={styles.wordmark}>JNIC · HQ</Text>
+        {metaLine ? (
+          <Text style={styles.lightMeta} numberOfLines={1}>
+            {metaLine.toUpperCase()}
+          </Text>
+        ) : null}
+        <Text style={styles.lightGreeting} numberOfLines={1}>
+          {timeOfDayGreeting()}, {name}
+        </Text>
+        <View style={styles.goldRule} />
       </View>
     );
   }
@@ -157,19 +147,30 @@ const styles = StyleSheet.create({
     ...typography.title2,
     color: colors.textOnNavy,
   },
-  lightGreeting: {
-    ...typography.title3,
-    color: colors.navy,
+  wordmark: {
+    ...typography.overline,
+    letterSpacing: 2.4,
+    color: colors.gold,
   },
-  lightSubtitle: {
-    ...typography.callout,
-    color: colors.navy,
-    marginTop: 2,
+  lightGreeting: {
+    fontSize: 30,
+    fontWeight: "500",
+    fontFamily: fonts.display,
+    letterSpacing: -0.4,
+    lineHeight: 38,
+    color: colors.textOnNavy,
+    marginTop: 4,
   },
   lightMeta: {
-    ...typography.footnote,
+    ...typography.caption,
+    letterSpacing: 0.6,
     color: colors.textMuted,
-    marginTop: 2,
+    marginTop: 18,
+  },
+  goldRule: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.goldBorder,
+    marginTop: spacing.lg,
   },
   roleBadge: {
     flexShrink: 0,

@@ -23,7 +23,7 @@ export function WeeklyStackBar({
           onPress={() => router.back()}
           style={({ pressed }) => [styles.back, pressed && styles.pressed]}
         >
-          <Ionicons name="chevron-back" size={24} color={colors.navy} />
+          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
         </Pressable>
         <View style={styles.copy}>
           <Text style={styles.title} numberOfLines={1}>
@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.title2,
-    color: colors.navy,
+    color: colors.textPrimary,
   },
   subtitle: {
     ...typography.footnote,
