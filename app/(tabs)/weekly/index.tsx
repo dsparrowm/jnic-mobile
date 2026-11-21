@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
+  Pressable,
   Alert,
   RefreshControl,
   ScrollView,
@@ -7,6 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -307,6 +309,28 @@ export default function WeeklyIndexScreen() {
             </>
           ) : null}
 
+          {!loading ? (
+            <SurfaceCard style={styles.card}>
+              <Pressable
+                style={styles.row}
+                onPress={() => router.push("/weekly/duties")}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.kicker}>Directorate line</Text>
+                  <Text style={styles.cardTitle}>Directorate duties</Text>
+                  <Text style={styles.captionLine}>
+                    D1–D6 reports for your unit, desk and directorate seats.
+                  </Text>
+                </View>
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={colors.textMuted}
+                />
+              </Pressable>
+            </SurfaceCard>
+          ) : null}
+
           {!loading && district ? (
             <>
               <SectionHeader title="District review" meta={district.district.name} />
@@ -573,6 +597,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.sm,
+  },
+  captionLine: {
+    ...typography.caption,
+    color: colors.textMuted,
   },
   kicker: {
     ...typography.overline,
