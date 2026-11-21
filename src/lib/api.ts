@@ -101,8 +101,10 @@ export interface PastorRecord {
   status: string;
   profilePicUrl: string | null;
   createdAt: string;
+  region: PastorOrgRef | null;
   state: PastorOrgRef | null;
   zone: PastorOrgRef | null;
+  district: PastorOrgRef | null;
   branch: PastorOrgRef | null;
 }
 
@@ -648,8 +650,10 @@ export const api = {
     email: string;
     phone?: string;
     role: Role;
+    regionId?: string;
     stateId?: string;
     zoneId?: string;
+    districtId?: string;
     branchId?: string;
     directorateId?: string;
     deskId?: string;

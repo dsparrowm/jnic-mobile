@@ -19,6 +19,7 @@ import {
   ApiError,
   type DirectorateRecord,
   type DirectorateDesk,
+  type OrgRegion,
   type OrgState,
   type OrgTreeResponse,
   type PastorRecord,
@@ -71,8 +72,10 @@ function statusTone(status: string): "success" | "warning" | "neutral" {
 
 type OrgForm = {
   role: Role;
+  regionId: string;
   stateId: string;
   zoneId: string;
+  districtId: string;
   branchId: string;
 };
 
@@ -81,8 +84,10 @@ const INITIAL_ONBOARD = {
   email: "",
   phone: "",
   role: Role.BRANCH_PASTOR as Role,
+  regionId: "",
   stateId: "",
   zoneId: "",
+  districtId: "",
   branchId: "",
   directorateId: "",
   deskId: "",
@@ -99,12 +104,18 @@ const MEMBER_OFFICES = [
   { value: "DEPUTY_DIRECTOR", label: "Deputy Director" },
 ];
 
+type BranchOption = OrgState["zones"][number]["branches"][number] & {
+  scopeName: string | null;
+};
+
 function OrgCascadeFields({
   orgTree,
+  regions,
   value,
   onChange,
 }: {
   orgTree: OrgState[];
+  regions: OrgRegion[];
   value: OrgForm;
   onChange: (next: OrgForm) => void;
 }) {
@@ -118,48 +129,73 @@ function OrgCascadeFields({
     [orgTree, value.stateId],
   );
 
-  const branches = useMemo(() => {
-    if (value.role === Role.MEMBER) {
-      return orgTree.flatMap((s) => [
-        ...s.zones.flatMap((zone) =>
-          zone.branches.map((branch) => ({ ...branch, zoneName: zone.name })),
+  const allDistricts = useMemo(
+    () =>
+      orgTree.flatMap((state) =>
+        state.zones.flatMap((zone) =>
+          zone.districts.map((district) => ({
+            ...district,
+            zoneName: zone.name,
+          })),
         ),
-        ...(s.branches ?? []).map((branch) => ({
+      ),
+    [orgTree],
+  );
+
+  const branches = useMemo((): BranchOption[] => {
+    const zoneBranches = (zone: OrgState["zones"][number]): BranchOption[] => [
+      ...zone.branches.map((branch) => ({
+        ...branch,
+        scopeName: zone.name as string | null,
+      })),
+      ...zone.districts.flatMap((district) =>
+        district.branches.map((branch) => ({
           ...branch,
-          zoneName: null as string | null,
+          scopeName: `${zone.name} · ${district.name}` as string | null,
+        })),
+      ),
+    ];
+    if (value.role === Role.MEMBER) {
+      return orgTree.flatMap((state) => [
+        ...state.zones.flatMap(zoneBranches),
+        ...(state.branches ?? []).map((branch) => ({
+          ...branch,
+          scopeName: state.name as string | null,
         })),
       ]);
     }
+    if (value.role === Role.DISTRICT_PASTOR) {
+      const district = allDistricts.find((d) => d.id === value.districtId);
+      return (district?.branches ?? []).map((branch) => ({
+        ...branch,
+        scopeName: district?.name ?? null,
+      }));
+    }
     if (value.role === Role.STATE_PASTOR) {
-      const zoned = zones.flatMap((zone) =>
-        zone.branches.map((branch) => ({
-          ...branch,
-          zoneName: zone.name,
-        })),
-      );
+      const zoned = zones.flatMap(zoneBranches);
       const unzoned = (stateRecord?.branches ?? []).map((branch) => ({
         ...branch,
-        zoneName: null as string | null,
+        scopeName: null as string | null,
       }));
       return [...zoned, ...unzoned];
     }
     const zone = zones.find((z) => z.id === value.zoneId);
-    return (zone?.branches ?? []).map((branch) => ({
-      ...branch,
-      zoneName: zone?.name ?? null,
-    }));
-  }, [orgTree, stateRecord?.branches, value.role, value.zoneId, zones]);
+    return zone ? zoneBranches(zone) : [];
+  }, [orgTree, allDistricts, stateRecord?.branches, value.role, value.districtId, value.zoneId, zones]);
 
+  const needsRegion = value.role === Role.REGIONAL_PASTOR;
   const needsState =
     value.role === Role.STATE_PASTOR ||
     value.role === Role.ZONAL_PASTOR ||
     value.role === Role.BRANCH_PASTOR;
   const needsZone =
     value.role === Role.ZONAL_PASTOR || value.role === Role.BRANCH_PASTOR;
+  const needsDistrict = value.role === Role.DISTRICT_PASTOR;
   const needsBranch = value.role === Role.BRANCH_PASTOR;
   const optionalBranch =
     value.role === Role.STATE_PASTOR ||
     value.role === Role.ZONAL_PASTOR ||
+    value.role === Role.DISTRICT_PASTOR ||
     value.role === Role.MEMBER;
 
   return (
@@ -174,14 +210,41 @@ function OrgCascadeFields({
             onPress={() =>
               onChange({
                 role,
+                regionId: "",
                 stateId: "",
                 zoneId: "",
+                districtId: "",
                 branchId: "",
               })
             }
           />
         ))}
       </ChipRow>
+
+      {needsRegion ? (
+        <>
+          <Text style={styles.fieldCaption}>Region</Text>
+          <ChipRow>
+            {regions.map((region) => (
+              <Chip
+                key={region.id}
+                label={region.name}
+                active={value.regionId === region.id}
+                onPress={() =>
+                  onChange({
+                    ...value,
+                    regionId: region.id,
+                    stateId: "",
+                    zoneId: "",
+                    districtId: "",
+                    branchId: "",
+                  })
+                }
+              />
+            ))}
+          </ChipRow>
+        </>
+      ) : null}
 
       {needsState ? (
         <>
@@ -197,6 +260,7 @@ function OrgCascadeFields({
                     ...value,
                     stateId: state.id,
                     zoneId: "",
+                    districtId: "",
                     branchId: "",
                   })
                 }
@@ -219,6 +283,29 @@ function OrgCascadeFields({
                   onChange({
                     ...value,
                     zoneId: zone.id,
+                    districtId: "",
+                    branchId: "",
+                  })
+                }
+              />
+            ))}
+          </ChipRow>
+        </>
+      ) : null}
+
+      {needsDistrict ? (
+        <>
+          <Text style={styles.fieldCaption}>District</Text>
+          <ChipRow>
+            {allDistricts.map((district) => (
+              <Chip
+                key={district.id}
+                label={`${district.name} · ${district.zoneName}`}
+                active={value.districtId === district.id}
+                onPress={() =>
+                  onChange({
+                    ...value,
+                    districtId: district.id,
                     branchId: "",
                   })
                 }
@@ -235,7 +322,11 @@ function OrgCascadeFields({
             {branches.map((branch) => (
               <Chip
                 key={branch.id}
-                label={branch.name}
+                label={
+                  branch.scopeName
+                    ? `${branch.name} · ${branch.scopeName}`
+                    : branch.name
+                }
                 active={value.branchId === branch.id}
                 onPress={() =>
                   onChange({
@@ -272,8 +363,8 @@ function OrgCascadeFields({
               <Chip
                 key={branch.id}
                 label={
-                  branch.zoneName
-                    ? `${branch.name} · ${branch.zoneName}`
+                  branch.scopeName
+                    ? `${branch.name} · ${branch.scopeName}`
                     : branch.name
                 }
                 active={value.branchId === branch.id}
@@ -330,8 +421,10 @@ export default function PastorsScreen() {
   );
   const [reassignForm, setReassignForm] = useState<OrgForm>({
     role: Role.BRANCH_PASTOR,
+    regionId: "",
     stateId: "",
     zoneId: "",
+    districtId: "",
     branchId: "",
   });
   const [reassignInitial, setReassignInitial] = useState<OrgForm | null>(null);
@@ -409,8 +502,10 @@ export default function PastorsScreen() {
   async function submitOnboard() {
     setOnboardError(null);
     const structuralError = validateOrgAssignmentStructure(onboardForm.role, {
+      regionId: onboardForm.regionId || null,
       stateId: onboardForm.stateId || null,
       zoneId: onboardForm.zoneId || null,
+      districtId: onboardForm.districtId || null,
       branchId: onboardForm.branchId || null,
     });
     if (structuralError) {
@@ -427,8 +522,10 @@ export default function PastorsScreen() {
         email: onboardForm.email.trim().toLowerCase(),
         phone: onboardForm.phone.trim() || undefined,
         role: onboardForm.role,
+        regionId: onboardForm.regionId || undefined,
         stateId: onboardForm.stateId || undefined,
         zoneId: onboardForm.zoneId || undefined,
+        districtId: onboardForm.districtId || undefined,
         branchId: onboardForm.branchId || undefined,
         ...(onboardForm.directorateId
           ? {
@@ -454,8 +551,10 @@ export default function PastorsScreen() {
     if (!reassignPastor) return;
     setReassignError(null);
     const structuralError = validateOrgAssignmentStructure(reassignForm.role, {
+      regionId: reassignForm.regionId || null,
       stateId: reassignForm.stateId || null,
       zoneId: reassignForm.zoneId || null,
+      districtId: reassignForm.districtId || null,
       branchId: reassignForm.branchId || null,
     });
     if (structuralError) {
@@ -466,8 +565,10 @@ export default function PastorsScreen() {
     try {
       await api.reassignUser(reassignPastor.id, {
         role: reassignForm.role,
+        regionId: reassignForm.regionId || null,
         stateId: reassignForm.stateId || null,
         zoneId: reassignForm.zoneId || null,
+        districtId: reassignForm.districtId || null,
         branchId: reassignForm.branchId || null,
         note: reassignNote.trim() || undefined,
       });
@@ -547,8 +648,10 @@ export default function PastorsScreen() {
     setActionPastor(null);
     const next = {
       role: pastor.role,
+      regionId: pastor.region?.id ?? "",
       stateId: pastor.state?.id ?? "",
       zoneId: pastor.zone?.id ?? "",
+      districtId: pastor.district?.id ?? "",
       branchId: pastor.branch?.id ?? "",
     };
     setReassignForm(next);
@@ -724,6 +827,7 @@ export default function PastorsScreen() {
         />
         <OrgCascadeFields
           orgTree={allOrgStates}
+          regions={orgTree.regions}
           value={onboardForm}
           onChange={(next) =>
             setOnboardForm((f) => ({
@@ -885,6 +989,7 @@ export default function PastorsScreen() {
         />
         <OrgCascadeFields
           orgTree={allOrgStates}
+          regions={orgTree.regions}
           value={reassignForm}
           onChange={setReassignForm}
         />

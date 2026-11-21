@@ -81,14 +81,14 @@ export default function DirectorateDetailScreen() {
     try {
       const d = await api.getDirectorate(id);
       setDetail(d);
-      if (isAdmin || isBranchPastor) {
+      if (canManageSeats || isBranchPastor) {
         try {
           const all = await api.listAllServiceUnits();
           setUnits(
             all.filter(
               (u) =>
                 u.directorate.id === d.id &&
-                (isAdmin || u.branch.id === user?.branchId),
+                (canManageSeats || u.branch.id === user?.branchId),
             ),
           );
         } catch {
@@ -473,10 +473,10 @@ export default function DirectorateDetailScreen() {
             )}
           </SurfaceCard>
 
-          {isAdmin || isBranchPastor ? (
+          {canManageSeats || isBranchPastor ? (
             <>
               <SectionHeader
-                title={isAdmin ? "Branch units" : "My branch units"}
+                title={canManageSeats ? "Branch units" : "My branch units"}
                 meta={`${units.length}`}
               />
               {units.length === 0 ? (
