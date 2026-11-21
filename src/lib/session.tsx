@@ -35,12 +35,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const mountedRef = useRef(false);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const me = await api.getMe();
+      const next: AuthUser = {
+        id: me.id,
+        email: me.email,
+        name: me.name,
+        role: me.role,
+        status: me.status,
+        hrPersonnel: me.hrPersonnel,
+        stateId: me.stateId,
+        zoneId: me.zoneId,
+        branchId: me.branchId,
+        regionId: me.regionId,
+        districtId: me.districtId,
+        stateName: me.stateName,
+        zoneName: me.zoneName,
+        branchName: me.branchName,
+        regionName: me.regionName,
+        districtName: me.districtName,
+        directorate: me.directorate,
+        profilePicUrl: me.profilePicUrl,
+      };
+      const refreshToken = await getRefreshToken();
+      const access = await import("./auth").then((m) => m.getAccessToken());
+      if (access && refreshToken) {
+        await saveSession({
+          accessToken: access,
+          refreshToken,
+          user: next,
+        });
+      }
+      if (mountedRef.current) setUser(next);
+    } catch (err) {
+      const stored = await getStoredUser();
+      if (!stored) {
+        if (mountedRef.current) setUser(null);
+        return;
+      }
+      const { ApiError } = await import("./api");
+      if (err instanceof ApiError && err.status === 401) {
+        await clearSession();
+        if (mountedRef.current) setUser(null);
+        return;
+      }
+      if (mountedRef.current) setUser(stored);
+    }
+  }, []);
+
   const bootstrap = useCallback(async () => {
     const restored = await restoreSession();
     if (mountedRef.current) {
       setUser(restored);
     }
-  }, []);
+    if (restored) {
+      await refreshUser();
+    }
+  }, [refreshUser]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -92,55 +144,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     await clearSession();
     if (mountedRef.current) setUser(null);
-  }, []);
-
-  const refreshUser = useCallback(async () => {
-    try {
-      const me = await api.getMe();
-      const next: AuthUser = {
-        id: me.id,
-        email: me.email,
-        name: me.name,
-        role: me.role,
-        status: me.status,
-        hrPersonnel: me.hrPersonnel,
-        stateId: me.stateId,
-        zoneId: me.zoneId,
-        branchId: me.branchId,
-        regionId: me.regionId,
-        districtId: me.districtId,
-        stateName: me.stateName,
-        zoneName: me.zoneName,
-        branchName: me.branchName,
-        regionName: me.regionName,
-        districtName: me.districtName,
-        directorate: me.directorate,
-        profilePicUrl: me.profilePicUrl,
-      };
-      const refreshToken = await getRefreshToken();
-      const access = await import("./auth").then((m) => m.getAccessToken());
-      if (access && refreshToken) {
-        await saveSession({
-          accessToken: access,
-          refreshToken,
-          user: next,
-        });
-      }
-      if (mountedRef.current) setUser(next);
-    } catch (err) {
-      const stored = await getStoredUser();
-      if (!stored) {
-        if (mountedRef.current) setUser(null);
-        return;
-      }
-      const { ApiError } = await import("./api");
-      if (err instanceof ApiError && err.status === 401) {
-        await clearSession();
-        if (mountedRef.current) setUser(null);
-        return;
-      }
-      if (mountedRef.current) setUser(stored);
-    }
   }, []);
 
   const value = useMemo<AuthState>(
