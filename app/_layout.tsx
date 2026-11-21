@@ -124,6 +124,10 @@ export default function RootLayout() {
               name="directorates/[id]"
               options={{ animation: "slide_from_right" }}
             />
+            <Stack.Screen
+              name="moves"
+              options={{ animation: "slide_from_right" }}
+            />
             <Stack.Screen name="unavailable" />
           </Stack>
           <AppAlertHost />
