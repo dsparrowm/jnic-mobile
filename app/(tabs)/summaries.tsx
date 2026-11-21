@@ -57,14 +57,31 @@ export default function SummariesScreen() {
   const [plansNote, setPlansNote] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Acting seats: a higher-scope pastor carrying a lower scope id files for it
+  // (e.g. a regional pastor with a stateId files that state's B4).
   function canFile(item: MonthlySummaryRecord): boolean {
     if (!user) return false;
     if (item.filing?.filedAt || item.status === "APPROVED") return false;
+    const scopeRoles: Role[] = [
+      Role.DISTRICT_PASTOR,
+      Role.ZONAL_PASTOR,
+      Role.STATE_PASTOR,
+      Role.REGIONAL_PASTOR,
+    ];
+    const holdsScopeRole = scopeRoles.includes(user.role);
     if (item.scopeType === "ZONE") {
-      return user.role === Role.ZONAL_PASTOR && user.zoneId === item.scopeId;
+      return (
+        user.role !== Role.DISTRICT_PASTOR &&
+        user.role !== Role.BRANCH_PASTOR &&
+        holdsScopeRole &&
+        user.zoneId === item.scopeId
+      );
     }
     if (item.scopeType === "STATE") {
-      return user.role === Role.STATE_PASTOR && user.stateId === item.scopeId;
+      return (
+        (user.role === Role.STATE_PASTOR || user.role === Role.REGIONAL_PASTOR) &&
+        user.stateId === item.scopeId
+      );
     }
     if (item.scopeType === "REGION") {
       return user.role === Role.REGIONAL_PASTOR && user.regionId === item.scopeId;
