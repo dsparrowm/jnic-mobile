@@ -226,10 +226,13 @@ export function PastorHome({ user }: { user: AuthUser }) {
               {data.branch && canSubmit ? (
                 <>
                   <BranchHomeMetrics report={data.thisWeek.report} />
-                  <AttendanceTrend
-                    points={data.attendanceTrend}
-                    subtitle={branchTrendSubtitle}
-                  />
+                  {(data.zoneAttendanceTrend ?? []).length === 0 &&
+                  (data.stateAttendanceTrend ?? []).length === 0 ? (
+                    <AttendanceTrend
+                      points={data.attendanceTrend}
+                      subtitle={branchTrendSubtitle}
+                    />
+                  ) : null}
                   {data.month ? (
                     <BranchMonthSnapshot month={data.month} />
                   ) : null}
