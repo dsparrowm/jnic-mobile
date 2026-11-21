@@ -30,9 +30,11 @@ export default function TabsLayout() {
   const admin = isAdmin(user);
   const leadPastor = isLeadPastor(user);
   const hq = isHqUser(user);
+  const hrPersonnel = user.hrPersonnel === true;
 
   // Pastors: Home · Reports · Library · Profile
   // HQ keeps ops tabs; Library is pastor-facing HQ content
+  // Seated HR personnel get the people desk regardless of role
   const allowed = hq
     ? [
         "index",
@@ -41,7 +43,13 @@ export default function TabsLayout() {
         ...(leadPastor ? ["approvals", "summaries"] : []),
         "profile",
       ]
-    : ["index", "weekly", "library", "profile"];
+    : [
+        "index",
+        "weekly",
+        ...(hrPersonnel ? ["pastors"] : []),
+        "library",
+        "profile",
+      ];
 
   return (
     <Tabs
@@ -57,7 +65,10 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="pastors"
-        options={{ title: "Pastors", href: admin ? "/pastors" : null }}
+        options={{
+          title: "People",
+          href: admin || hrPersonnel ? "/pastors" : null,
+        }}
       />
       <Tabs.Screen
         name="org"

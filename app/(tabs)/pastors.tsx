@@ -42,6 +42,7 @@ import { SheetHeader } from "@/src/components/premium/sheet-header";
 import { showAppAlert } from "@/src/components/premium/app-alert";
 import { humanizeStatus } from "@/src/lib/format";
 import { useAuth } from "@/src/lib/session";
+import { useLocalSearchParams } from "expo-router";
 import {
   colors,
   layout,
@@ -294,6 +295,7 @@ function OrgCascadeFields({
 
 export default function PastorsScreen() {
   const { user } = useAuth();
+  const params = useLocalSearchParams<{ onboard?: string }>();
   const canManage =
     user?.role === Role.ADMIN || user?.hrPersonnel === true;
   const [items, setItems] = useState<PastorRecord[]>([]);
@@ -305,7 +307,13 @@ export default function PastorsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [onboardOpen, setOnboardOpen] = useState(false);
+  const [onboardOpen, setOnboardOpen] = useState(params.onboard === "1");
+
+  // Deep link "/pastors?onboard=1" opens the onboard sheet — also re-fires
+  // when the screen stays mounted and the user taps the row again.
+  useEffect(() => {
+    if (params.onboard === "1") setOnboardOpen(true);
+  }, [params.onboard]);
   const [onboardForm, setOnboardForm] = useState(INITIAL_ONBOARD);
   const [onboardBusy, setOnboardBusy] = useState(false);
   const [onboardError, setOnboardError] = useState<string | null>(null);
