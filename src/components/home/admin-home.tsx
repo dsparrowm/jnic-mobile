@@ -272,7 +272,7 @@ export function AdminHome({ user }: { user: AuthUser }) {
               </SurfaceCard>
 
               <SectionHeader title="Manage" />
-              <SurfaceCard>
+              <SurfaceCard style={styles.manageCard}>
                 <ManageRow
                   icon="people-outline"
                   title="People"
@@ -312,11 +312,12 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   body: {
     paddingHorizontal: layout.screenPad,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.xxl,
-    gap: spacing.sm,
+    gap: spacing.md,
   },
-  kpiCard: { marginTop: spacing.sm },
-  kpiStrip: { flexDirection: "row", paddingVertical: spacing.xs },
+  kpiCard: { padding: spacing.md },
+  kpiStrip: { flexDirection: "row" },
   kpi: { flex: 1, gap: 2 },
   kpiDivider: {
     borderLeftWidth: 1,
@@ -341,6 +342,7 @@ const styles = StyleSheet.create({
   kpiUp: { color: colors.success },
   kpiDown: { color: colors.error },
   kpiMuted: { color: colors.textMuted },
+  manageCard: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
   manageRow: {
     flexDirection: "row",
     alignItems: "center",
