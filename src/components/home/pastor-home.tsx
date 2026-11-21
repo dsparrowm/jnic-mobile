@@ -223,7 +223,7 @@ export function PastorHome({ user }: { user: AuthUser }) {
                 />
               ) : null}
 
-              {data.branch && canSubmit ? (
+              {data.branch && canSubmit && !data.zone && !data.state ? (
                 <>
                   <BranchHomeMetrics report={data.thisWeek.report} />
                   <AttendanceTrend
