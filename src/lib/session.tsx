@@ -103,12 +103,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         name: me.name,
         role: me.role,
         status: me.status,
+        hrPersonnel: me.hrPersonnel,
         stateId: me.stateId,
         zoneId: me.zoneId,
         branchId: me.branchId,
+        regionId: me.regionId,
+        districtId: me.districtId,
         stateName: me.stateName,
         zoneName: me.zoneName,
         branchName: me.branchName,
+        regionName: me.regionName,
+        districtName: me.districtName,
+        directorate: me.directorate,
         profilePicUrl: me.profilePicUrl,
       };
       const refreshToken = await getRefreshToken();
