@@ -341,6 +341,14 @@ export default function WeeklyIndexScreen() {
             />
           ) : null}
 
+          {!loading && member ? (
+            <EmptyPanel
+              icon="document-text-outline"
+              title="All your filings live in Directorate duties"
+              body="D1 weekly reports and the monthly D-forms are filed from the card above — there is no territorial line on a member account."
+            />
+          ) : null}
+
           {!loading && district ? (
             <>
               <SectionHeader title="District review" meta={district.district.name} />
