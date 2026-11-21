@@ -63,7 +63,7 @@ export function isAdmin(user: AuthUser | null): boolean {
 }
 
 export function isLeadPastor(user: AuthUser | null): boolean {
-  return user?.role === Role.LEAD_PASTOR;
+  return user?.role === Role.SENIOR_PASTOR || user?.role === Role.RESIDENT_PASTOR;
 }
 
 export function isHqUser(user: AuthUser | null): boolean {

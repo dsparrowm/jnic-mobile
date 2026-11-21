@@ -19,6 +19,7 @@ import {
   api,
   ApiError,
   type OrgState,
+  type OrgTreeResponse,
   type PastorRecord,
   type PastorListSummary,
 } from "@/src/lib/api";
@@ -260,7 +261,7 @@ function OrgCascadeFields({
 export default function PastorsScreen() {
   const [items, setItems] = useState<PastorRecord[]>([]);
   const [summary, setSummary] = useState<PastorListSummary | null>(null);
-  const [orgTree, setOrgTree] = useState<OrgState[]>([]);
+  const [orgTree, setOrgTree] = useState<OrgTreeResponse>({ regions: [], unassignedStates: [] });
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
@@ -286,6 +287,14 @@ export default function PastorsScreen() {
   const [reassignError, setReassignError] = useState<string | null>(null);
 
   const [actionPastor, setActionPastor] = useState<PastorRecord | null>(null);
+
+  const allOrgStates = useMemo(
+    () => [
+      ...orgTree.unassignedStates,
+      ...orgTree.regions.flatMap((r) => r.states),
+    ],
+    [orgTree],
+  );
 
   const load = useCallback(async () => {
     setError(null);
@@ -634,7 +643,7 @@ export default function PastorsScreen() {
           onChangeText={(phone) => setOnboardForm((f) => ({ ...f, phone }))}
         />
         <OrgCascadeFields
-          orgTree={orgTree}
+          orgTree={allOrgStates}
           value={onboardForm}
           onChange={(next) => setOnboardForm((f) => ({ ...f, ...next }))}
         />
@@ -669,7 +678,7 @@ export default function PastorsScreen() {
           closeDisabled={reassignBusy}
         />
         <OrgCascadeFields
-          orgTree={orgTree}
+          orgTree={allOrgStates}
           value={reassignForm}
           onChange={setReassignForm}
         />

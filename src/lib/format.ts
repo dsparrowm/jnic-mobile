@@ -20,7 +20,10 @@ export function formatRoleShort(role?: string | null): string {
   if (role === Role.BRANCH_PASTOR) return "Branch";
   if (role === Role.ZONAL_PASTOR) return "Zonal";
   if (role === Role.STATE_PASTOR) return "State";
-  if (role === Role.LEAD_PASTOR) return "Lead";
+  if (role === Role.SENIOR_PASTOR) return "Senior";
+  if (role === Role.RESIDENT_PASTOR) return "Resident";
+  if (role === Role.REGIONAL_PASTOR) return "Regional";
+  if (role === Role.DISTRICT_PASTOR) return "District";
   if (role === Role.ADMIN) return "Admin";
   return formatRole(role);
 }
@@ -30,7 +33,7 @@ export function greetingName(user: AuthUser | null): string {
   const first = parts[0];
   if (first && !TITLE_WORDS.has(first.toLowerCase())) return first;
   if (user?.role === Role.ADMIN) return "Admin";
-  if (user?.role === Role.LEAD_PASTOR) return "Pastor";
+  if (user?.role === Role.SENIOR_PASTOR || user?.role === Role.RESIDENT_PASTOR) return "Pastor";
   return first ?? "there";
 }
 

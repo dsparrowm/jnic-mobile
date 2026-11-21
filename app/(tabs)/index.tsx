@@ -2,11 +2,11 @@ import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { useCallback, useRef } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
+import { isHqPastor,
   Role,
   type HqHomeTaskKind,
   type NotificationRecord,
-} from "@repo/types";
+ } from "@repo/types";
 import { AttentionList } from "@/src/components/home/attention-list";
 import { AttendanceTrend } from "@/src/components/home/attendance-trend";
 import { HomeHero } from "@/src/components/home/home-hero";
@@ -59,7 +59,7 @@ function HqHome() {
   useRefreshOnFocus(refresh);
 
   const openPrimaryAction = () => {
-    const route = data?.role === Role.LEAD_PASTOR ? "/approvals" : "/weekly";
+    const route = data?.role && isHqPastor(data.role) ? "/approvals" : "/weekly";
     router.navigate(route as never);
   };
 
