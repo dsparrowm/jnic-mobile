@@ -54,6 +54,7 @@ export default function DirectorateDetailScreen() {
   const { user } = useAuth();
   const isAdmin = user?.role === Role.ADMIN;
   const isBranchPastor = user?.role === Role.BRANCH_PASTOR;
+  const canManageSeats = isAdmin || user?.hrPersonnel === true;
 
   const [detail, setDetail] = useState<DirectorateDetail | null>(null);
   const [units, setUnits] = useState<ServiceUnitRecord[]>([]);
@@ -99,7 +100,7 @@ export default function DirectorateDetailScreen() {
     } finally {
       setLoading(false);
     }
-  }, [id, isAdmin, isBranchPastor, user?.branchId]);
+  }, [id, isAdmin, isBranchPastor, canManageSeats, user?.branchId]);
 
   useEffect(() => {
     void load();
@@ -134,6 +135,18 @@ export default function DirectorateDetailScreen() {
               name: u.name,
               email: u.email,
               meta: u.branch?.name ?? u.branchName ?? undefined,
+            })),
+        );
+      } else if (canManageSeats) {
+        const res = await api.listPastors({ perPage: 100 });
+        setPeople(
+          res.items
+            .filter((p) => p.status === "ACTIVE")
+            .map((p) => ({
+              id: p.id,
+              name: p.name,
+              email: p.email,
+              meta: p.branch?.name ?? undefined,
             })),
         );
       } else if (isBranchPastor && user?.branchId) {
@@ -300,7 +313,7 @@ export default function DirectorateDetailScreen() {
                       {m.user.branch ? ` · ${m.user.branch.name}` : ""}
                     </Text>
                   </View>
-                  {isAdmin ? (
+                  {canManageSeats ? (
                     <Pressable
                       accessibilityLabel={`Remove ${m.user.name}`}
                       onPress={() => confirmRemove(m.id, m.user.name)}
@@ -358,7 +371,7 @@ export default function DirectorateDetailScreen() {
                       {m.user.branch ? ` · ${m.user.branch.name}` : ""}
                     </Text>
                   </View>
-                  {isAdmin ? (
+                  {canManageSeats ? (
                     <Pressable
                       accessibilityLabel={`Remove ${m.user.name}`}
                       onPress={() => confirmRemove(m.id, m.user.name)}
@@ -411,7 +424,7 @@ export default function DirectorateDetailScreen() {
             </>
           ) : null}
 
-          {isAdmin ? (
+          {canManageSeats ? (
             <PrimaryButton label="Assign seat" onPress={openAssign} />
           ) : null}
         </ScrollView>

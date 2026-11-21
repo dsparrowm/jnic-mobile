@@ -36,6 +36,7 @@ export interface AuthUser {
   name: string;
   role: Role;
   status: string;
+  hrPersonnel?: boolean;
   stateId: string | null;
   zoneId: string | null;
   branchId: string | null;

@@ -38,6 +38,7 @@ import { InlineNotice, ScreenSkeleton } from "@/src/components/premium/states";
 import { BottomSheet } from "@/src/components/premium/bottom-sheet";
 import { SheetHeader } from "@/src/components/premium/sheet-header";
 import { humanizeStatus } from "@/src/lib/format";
+import { useAuth } from "@/src/lib/session";
 import {
   colors,
   layout,
@@ -259,6 +260,9 @@ function OrgCascadeFields({
 }
 
 export default function PastorsScreen() {
+  const { user } = useAuth();
+  const canManage =
+    user?.role === Role.ADMIN || user?.hrPersonnel === true;
   const [items, setItems] = useState<PastorRecord[]>([]);
   const [summary, setSummary] = useState<PastorListSummary | null>(null);
   const [orgTree, setOrgTree] = useState<OrgTreeResponse>({ regions: [], unassignedStates: [] });
@@ -514,14 +518,16 @@ export default function PastorsScreen() {
             : "Directory"
         }
         right={
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Onboard pastor"
-            style={styles.onboardBtn}
-            onPress={() => setOnboardOpen(true)}
-          >
-            <Text style={styles.onboardBtnText}>Onboard</Text>
-          </Pressable>
+          canManage ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Onboard pastor"
+              style={styles.onboardBtn}
+              onPress={() => setOnboardOpen(true)}
+            >
+              <Text style={styles.onboardBtnText}>Onboard</Text>
+            </Pressable>
+          ) : undefined
         }
       />
 
@@ -712,7 +718,7 @@ export default function PastorsScreen() {
               subtitle={`${formatRole(actionPastor.role)} · ${actionPastor.email}`}
               onClose={() => setActionPastor(null)}
             />
-            {actionPastor.status === UserStatus.PENDING ? (
+            {canManage && actionPastor.status === UserStatus.PENDING ? (
               <Pressable
                 accessibilityRole="button"
                 style={styles.actionRow}
@@ -721,7 +727,7 @@ export default function PastorsScreen() {
                 <Text style={styles.actionRowText}>Resend invite</Text>
               </Pressable>
             ) : null}
-            {actionPastor.status === UserStatus.ACTIVE ? (
+            {canManage && actionPastor.status === UserStatus.ACTIVE ? (
               <Pressable
                 accessibilityRole="button"
                 style={styles.actionRow}
@@ -730,7 +736,7 @@ export default function PastorsScreen() {
                 <Text style={styles.actionRowText}>Reassign</Text>
               </Pressable>
             ) : null}
-            {actionPastor.status !== UserStatus.DEACTIVATED ? (
+            {canManage && actionPastor.status !== UserStatus.DEACTIVATED ? (
               <Pressable
                 accessibilityRole="button"
                 style={styles.actionRow}
