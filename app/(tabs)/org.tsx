@@ -462,9 +462,16 @@ export default function OrgScreen() {
                   color={colors.goldText}
                 />
                 <Text style={styles.dirCardName}>{d.name}</Text>
+                {!d.leadership.director ? (
+                  <View style={styles.dirVacantPill}>
+                    <Text style={styles.dirVacantText}>Vacant</Text>
+                  </View>
+                ) : null}
               </View>
-              <Text style={styles.dirCardMeta}>
-                Director: {d.leadership.director?.name ?? "Vacant"}
+              <Text style={styles.dirCardMeta} numberOfLines={1}>
+                {d.leadership.director
+                  ? `Director: ${d.leadership.director.name}`
+                  : "No director seated"}
               </Text>
               <Text style={styles.dirCardMeta}>
                 {d.deskCount} desks · {d.unitTypeCount} unit types ·{" "}
@@ -800,6 +807,17 @@ const styles = StyleSheet.create({
     ...typography.caption,
     fontWeight: "700",
     color: colors.goldText,
+  },
+  dirVacantPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: radius.full,
+    backgroundColor: colors.warningSoft,
+  },
+  dirVacantText: {
+    ...typography.caption,
+    fontWeight: "700",
+    color: colors.warning,
   },
   primaryChip: {
     backgroundColor: colors.gold,
