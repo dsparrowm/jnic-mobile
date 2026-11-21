@@ -10,11 +10,15 @@ import {
 import { useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import type { HqHomeTask } from "@repo/types";
 import { api, type AuthUser } from "@/src/lib/api";
+import { formatCount } from "@/src/lib/format";
 import { HomeHero } from "@/src/components/home/home-hero";
 import { HomeSkeleton } from "@/src/components/home/home-states";
+import { AttentionList } from "@/src/components/home/attention-list";
 import { NotificationBell } from "@/src/components/notifications/notification-bell";
-import { colors, layout, radius, spacing, typography } from "@/src/theme/tokens";
+import { SectionHeader, SurfaceCard } from "@/src/components/premium/screen";
+import { colors, fonts, layout, radius, spacing, typography } from "@/src/theme/tokens";
 
 type AdminOverview = {
   users: { total: number; active: number; pending: number; deactivated: number };
@@ -29,40 +33,68 @@ type AdminOverview = {
   unread: number;
 };
 
-function StatRow({ label, value }: { label: string; value: number }) {
+function Kpi({
+  label,
+  value,
+  delta,
+  tone,
+  divider,
+}: {
+  label: string;
+  value: string;
+  delta: string;
+  tone: "up" | "down" | "muted";
+  divider?: boolean;
+}) {
   return (
-    <View style={styles.statRow}>
-      <Text style={styles.statLabel}>{label}</Text>
-      <Text style={styles.statValue}>{value}</Text>
+    <View style={[styles.kpi, divider && styles.kpiDivider]}>
+      <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit>
+        {value}
+      </Text>
+      <Text style={styles.kpiLabel} numberOfLines={1}>
+        {label}
+      </Text>
+      <Text
+        style={[
+          styles.kpiDelta,
+          tone === "up"
+            ? styles.kpiUp
+            : tone === "down"
+              ? styles.kpiDown
+              : styles.kpiMuted,
+        ]}
+        numberOfLines={1}
+      >
+        {delta}
+      </Text>
     </View>
   );
 }
 
-function ManageCard({
+function ManageRow({
   icon,
   title,
-  subtitle,
+  detail,
   onPress,
-  children,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
-  subtitle: string;
+  detail: string;
   onPress: () => void;
-  children: React.ReactNode;
 }) {
   return (
-    <View style={styles.card}>
-      <View style={styles.cardHead}>
-        <Ionicons name={icon} size={16} color={colors.goldText} />
-        <Text style={styles.cardTitle}>{title}</Text>
+    <Pressable style={styles.manageRow} onPress={onPress}>
+      <View style={styles.manageIcon}>
+        <Ionicons name={icon} size={18} color={colors.goldText} />
       </View>
-      {children}
-      <Pressable style={styles.cardLink} onPress={onPress}>
-        <Text style={styles.cardLinkText}>{subtitle}</Text>
-        <Ionicons name="chevron-forward" size={14} color={colors.goldText} />
-      </Pressable>
-    </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.manageTitle}>{title}</Text>
+        <Text style={styles.manageDetail} numberOfLines={1}>
+          {detail}
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+    </Pressable>
   );
 }
 
@@ -123,12 +155,44 @@ export function AdminHome({ user }: { user: AuthUser }) {
     useCallback(() => {
       if (firstFocus.current) {
         firstFocus.current = false;
-        void refresh();
-        return;
       }
       void refresh();
     }, [refresh]),
   );
+
+  const tasks: HqHomeTask[] = [];
+  if (data) {
+    if (data.users.pending > 0) {
+      tasks.push({
+        kind: "PENDING_ONBOARDING",
+        title: "Onboarding pending",
+        description: `${data.users.pending} ${data.users.pending === 1 ? "person has" : "people have"} not activated their account.`,
+        count: data.users.pending,
+        severity: "WARNING",
+      });
+    }
+    const vacant = data.directorates.total - data.directorates.directorsSeated;
+    if (vacant > 0) {
+      tasks.push({
+        kind: "DIRECTORATE_VACANCIES",
+        title: "Director seats vacant",
+        description: `${vacant} of ${data.directorates.total} directorates have no director seated.`,
+        count: vacant,
+        severity: "URGENT",
+      });
+    }
+  }
+
+  const openTask = (kind: HqHomeTask["kind"]) => {
+    if (kind === "PENDING_ONBOARDING") {
+      router.navigate("/pastors" as never);
+    } else if (kind === "DIRECTORATE_VACANCIES") {
+      router.push({
+        pathname: "/org",
+        params: { view: "directorates" },
+      } as never);
+    }
+  };
 
   return (
     <View style={styles.root}>
@@ -163,64 +227,78 @@ export function AdminHome({ user }: { user: AuthUser }) {
         <View style={styles.body}>
           {loading && !data ? <HomeSkeleton /> : null}
           {error && !data ? (
-            <View style={styles.errorCard}>
+            <SurfaceCard>
               <Text style={styles.errorText}>{error}</Text>
-            </View>
+            </SurfaceCard>
           ) : null}
 
           {data ? (
             <>
-              <ManageCard
-                icon="people-outline"
-                title="People"
-                subtitle="Open pastor directory"
-                onPress={() => router.navigate("/pastors" as never)}
-              >
-                <StatRow label="Active accounts" value={data.users.active} />
-                <StatRow
-                  label="Pending onboarding"
-                  value={data.users.pending}
-                />
-                <StatRow label="Deactivated" value={data.users.deactivated} />
-              </ManageCard>
+              <AttentionList tasks={tasks} onTaskPress={openTask} />
 
-              <ManageCard
-                icon="business-outline"
-                title="Territory"
-                subtitle="Manage structure"
-                onPress={() => router.navigate("/org" as never)}
-              >
-                <StatRow label="Regions" value={data.org.regions} />
-                <StatRow label="States" value={data.org.states} />
-                <StatRow label="Zones" value={data.org.zones} />
-                <StatRow label="Districts" value={data.org.districts} />
-                <StatRow label="Branches" value={data.org.branches} />
-              </ManageCard>
+              <SurfaceCard style={styles.kpiCard}>
+                <View style={styles.kpiStrip}>
+                  <Kpi
+                    label="Accounts"
+                    value={formatCount(data.users.active)}
+                    delta={`${data.users.pending} pending`}
+                    tone={data.users.pending > 0 ? "muted" : "up"}
+                  />
+                  <Kpi
+                    label="Directors"
+                    value={`${data.directorates.directorsSeated}/${data.directorates.total}`}
+                    delta={
+                      data.directorates.directorsSeated ===
+                      data.directorates.total
+                        ? "all seated"
+                        : `${data.directorates.total - data.directorates.directorsSeated} vacant`
+                    }
+                    tone={
+                      data.directorates.directorsSeated ===
+                      data.directorates.total
+                        ? "up"
+                        : "down"
+                    }
+                    divider
+                  />
+                  <Kpi
+                    label="Branches"
+                    value={formatCount(data.org.branches)}
+                    delta={`${data.org.states} states · ${data.org.zones} zones`}
+                    tone="muted"
+                    divider
+                  />
+                </View>
+              </SurfaceCard>
 
-              <ManageCard
-                icon="layers-outline"
-                title="Directorates"
-                subtitle="Manage directorates"
-                onPress={() =>
-                  router.push({
-                    pathname: "/org",
-                    params: { view: "directorates" },
-                  } as never)
-                }
-              >
-                <StatRow
-                  label="Directors seated"
-                  value={data.directorates.directorsSeated}
+              <SectionHeader title="Manage" />
+              <SurfaceCard>
+                <ManageRow
+                  icon="people-outline"
+                  title="People"
+                  detail={`${data.users.active} active · ${data.users.deactivated} deactivated`}
+                  onPress={() => router.navigate("/pastors" as never)}
                 />
-                <StatRow
-                  label="Total members"
-                  value={data.directorates.members}
+                <View style={styles.rowDivider} />
+                <ManageRow
+                  icon="business-outline"
+                  title="Territory"
+                  detail={`${data.org.regions} regions · ${data.org.states} states · ${data.org.zones} zones · ${data.org.districts} districts · ${data.org.branches} branches`}
+                  onPress={() => router.navigate("/org" as never)}
                 />
-                <StatRow
-                  label="Directorates"
-                  value={data.directorates.total}
+                <View style={styles.rowDivider} />
+                <ManageRow
+                  icon="layers-outline"
+                  title="Directorates"
+                  detail={`${data.directorates.members} members across ${data.directorates.total} directorates`}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/org",
+                      params: { view: "directorates" },
+                    } as never)
+                  }
                 />
-              </ManageCard>
+              </SurfaceCard>
             </>
           ) : null}
         </View>
@@ -237,54 +315,56 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
     gap: spacing.sm,
   },
-  card: {
-    backgroundColor: colors.bgSurface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
+  kpiCard: { marginTop: spacing.sm },
+  kpiStrip: { flexDirection: "row", paddingVertical: spacing.xs },
+  kpi: { flex: 1, gap: 2 },
+  kpiDivider: {
+    borderLeftWidth: 1,
+    borderLeftColor: colors.border,
+    paddingLeft: spacing.md,
   },
-  cardHead: {
+  kpiValue: {
+    fontFamily: fonts.display,
+    fontSize: 24,
+    lineHeight: 28,
+    color: colors.textPrimary,
+  },
+  kpiLabel: {
+    fontSize: 10,
+    lineHeight: 13,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    color: colors.textMuted,
+  },
+  kpiDelta: { fontSize: 11, lineHeight: 14, fontWeight: "600" },
+  kpiUp: { color: colors.success },
+  kpiDown: { color: colors.error },
+  kpiMuted: { color: colors.textMuted },
+  manageRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: spacing.sm,
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
   },
-  cardTitle: {
+  manageIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    backgroundColor: colors.navyMuted,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  manageTitle: {
     ...typography.body,
-    fontWeight: "700",
+    fontWeight: "600",
     color: colors.textPrimary,
   },
-  statRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 4,
+  manageDetail: { ...typography.caption, color: colors.textMuted, marginTop: 1 },
+  rowDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+    marginLeft: 36 + spacing.sm,
   },
-  statLabel: { ...typography.caption, color: colors.textMuted },
-  statValue: {
-    ...typography.caption,
-    fontWeight: "700",
-    color: colors.textPrimary,
-  },
-  cardLink: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    gap: 2,
-    marginTop: spacing.sm,
-  },
-  cardLinkText: {
-    ...typography.caption,
-    fontWeight: "700",
-    color: colors.goldText,
-  },
-  errorCard: {
-    backgroundColor: colors.bgSurface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.lg,
-    alignItems: "center",
-  },
-  errorText: { ...typography.body, color: colors.error },
+  errorText: { ...typography.body, color: colors.error, textAlign: "center" },
 });
