@@ -119,6 +119,10 @@ export default function RootLayout() {
               name="notifications"
               options={{ animation: "slide_from_right" }}
             />
+            <Stack.Screen
+              name="directorates/[id]"
+              options={{ animation: "slide_from_right" }}
+            />
             <Stack.Screen name="unavailable" />
           </Stack>
         </AuthGate>
