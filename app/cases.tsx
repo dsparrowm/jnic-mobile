@@ -121,7 +121,8 @@ export default function CasesScreen() {
       setNewOpen(false);
       setNewTitle("");
       setNewDetail("");
-      await load();
+      if (newKind !== kind) setKind(newKind);
+      else await load();
     } catch (err) {
       setSheetError(
         err instanceof ApiError ? err.message : "Could not open case",
@@ -325,7 +326,10 @@ export default function CasesScreen() {
             ) : (
               <>
                 {selected.resolution ? (
-                  <Text style={styles.detailBody}>{selected.resolution}</Text>
+                  <>
+                    <Text style={styles.detailLabel}>Resolution</Text>
+                    <Text style={styles.detailBody}>{selected.resolution}</Text>
+                  </>
                 ) : null}
                 {sheetError ? <InlineNotice message={sheetError} /> : null}
                 <PrimaryButton
