@@ -17,10 +17,13 @@ import {
 import {
   api,
   ApiError,
+  type DirectorateRecord,
+  type DirectorateDesk,
   type OrgState,
   type OrgTreeResponse,
   type PastorRecord,
   type PastorListSummary,
+  type ServiceUnitRecord,
 } from "@/src/lib/api";
 import {
   Avatar,
@@ -80,7 +83,20 @@ const INITIAL_ONBOARD = {
   stateId: "",
   zoneId: "",
   branchId: "",
+  directorateId: "",
+  deskId: "",
+  office: "MEMBER",
+  serviceUnitId: "",
 };
+
+const MEMBER_OFFICES = [
+  { value: "MEMBER", label: "Member" },
+  { value: "DESK_HEAD", label: "Desk Head" },
+  { value: "DEPUTY_DESK_HEAD", label: "Deputy Desk Head" },
+  { value: "SECRETARY", label: "Secretary" },
+  { value: "DIRECTOR", label: "Director" },
+  { value: "DEPUTY_DIRECTOR", label: "Deputy Director" },
+];
 
 function OrgCascadeFields({
   orgTree,
@@ -102,6 +118,17 @@ function OrgCascadeFields({
   );
 
   const branches = useMemo(() => {
+    if (value.role === Role.MEMBER) {
+      return orgTree.flatMap((s) => [
+        ...s.zones.flatMap((zone) =>
+          zone.branches.map((branch) => ({ ...branch, zoneName: zone.name })),
+        ),
+        ...(s.branches ?? []).map((branch) => ({
+          ...branch,
+          zoneName: null as string | null,
+        })),
+      ]);
+    }
     if (value.role === Role.STATE_PASTOR) {
       const zoned = zones.flatMap((zone) =>
         zone.branches.map((branch) => ({
@@ -120,7 +147,7 @@ function OrgCascadeFields({
       ...branch,
       zoneName: zone?.name ?? null,
     }));
-  }, [stateRecord?.branches, value.role, value.zoneId, zones]);
+  }, [orgTree, stateRecord?.branches, value.role, value.zoneId, zones]);
 
   const needsState =
     value.role === Role.STATE_PASTOR ||
@@ -130,7 +157,9 @@ function OrgCascadeFields({
     value.role === Role.ZONAL_PASTOR || value.role === Role.BRANCH_PASTOR;
   const needsBranch = value.role === Role.BRANCH_PASTOR;
   const optionalBranch =
-    value.role === Role.STATE_PASTOR || value.role === Role.ZONAL_PASTOR;
+    value.role === Role.STATE_PASTOR ||
+    value.role === Role.ZONAL_PASTOR ||
+    value.role === Role.MEMBER;
 
   return (
     <View style={{ gap: spacing.md }}>
@@ -221,7 +250,11 @@ function OrgCascadeFields({
 
       {optionalBranch ? (
         <>
-          <Text style={styles.fieldCaption}>Home branch (optional)</Text>
+          <Text style={styles.fieldCaption}>
+            {value.role === Role.MEMBER
+              ? "Home branch (optional)"
+              : "Home branch (optional)"}
+          </Text>
           <ChipRow>
             <Chip
               label="None"
@@ -276,6 +309,13 @@ export default function PastorsScreen() {
   const [onboardForm, setOnboardForm] = useState(INITIAL_ONBOARD);
   const [onboardBusy, setOnboardBusy] = useState(false);
   const [onboardError, setOnboardError] = useState<string | null>(null);
+  const [directorates, setDirectorates] = useState<DirectorateRecord[] | null>(
+    null,
+  );
+  const [directorateDesks, setDirectorateDesks] = useState<DirectorateDesk[]>(
+    [],
+  );
+  const [serviceUnits, setServiceUnits] = useState<ServiceUnitRecord[]>([]);
 
   const [reassignPastor, setReassignPastor] = useState<PastorRecord | null>(
     null,
@@ -332,6 +372,31 @@ export default function PastorsScreen() {
     return () => clearTimeout(t);
   }, [load]);
 
+  // Lazy-load directorate + unit options when onboarding a MEMBER.
+  useEffect(() => {
+    if (!onboardOpen || onboardForm.role !== Role.MEMBER) return;
+    if (directorates !== null) return;
+    api
+      .listDirectorates()
+      .then(setDirectorates)
+      .catch(() => setDirectorates([]));
+    api
+      .listAllServiceUnits()
+      .then(setServiceUnits)
+      .catch(() => setServiceUnits([]));
+  }, [onboardOpen, onboardForm.role, directorates]);
+
+  useEffect(() => {
+    if (!onboardForm.directorateId) {
+      setDirectorateDesks([]);
+      return;
+    }
+    api
+      .getDirectorate(onboardForm.directorateId)
+      .then((d) => setDirectorateDesks(d.desks))
+      .catch(() => setDirectorateDesks([]));
+  }, [onboardForm.directorateId]);
+
   async function submitOnboard() {
     setOnboardError(null);
     const structuralError = validateOrgAssignmentStructure(onboardForm.role, {
@@ -345,6 +410,9 @@ export default function PastorsScreen() {
     }
     setOnboardBusy(true);
     try {
+      const deskNeeded =
+        onboardForm.office === "DESK_HEAD" ||
+        onboardForm.office === "DEPUTY_DESK_HEAD";
       await api.createOnboardingUser({
         name: onboardForm.name.trim(),
         email: onboardForm.email.trim().toLowerCase(),
@@ -353,6 +421,14 @@ export default function PastorsScreen() {
         stateId: onboardForm.stateId || undefined,
         zoneId: onboardForm.zoneId || undefined,
         branchId: onboardForm.branchId || undefined,
+        ...(onboardForm.directorateId
+          ? {
+              directorateId: onboardForm.directorateId,
+              deskId: deskNeeded ? onboardForm.deskId || undefined : undefined,
+              office: onboardForm.office,
+              serviceUnitId: onboardForm.serviceUnitId || undefined,
+            }
+          : {}),
       });
       setOnboardOpen(false);
       setOnboardForm(INITIAL_ONBOARD);
@@ -610,7 +686,9 @@ export default function PastorsScreen() {
         scrollable
       >
         <SheetHeader
-          title="Onboard pastor"
+          title={
+            onboardForm.role === Role.MEMBER ? "Onboard member" : "Onboard pastor"
+          }
           subtitle="Send a secure setup invitation."
           onClose={requestCloseOnboard}
           closeDisabled={onboardBusy}
@@ -636,8 +714,134 @@ export default function PastorsScreen() {
         <OrgCascadeFields
           orgTree={allOrgStates}
           value={onboardForm}
-          onChange={(next) => setOnboardForm((f) => ({ ...f, ...next }))}
+          onChange={(next) =>
+            setOnboardForm((f) => ({
+              ...f,
+              ...next,
+              ...(next.role && next.role !== f.role
+                ? {
+                    directorateId: "",
+                    deskId: "",
+                    office: "MEMBER",
+                    serviceUnitId: "",
+                  }
+                : {}),
+            }))
+          }
         />
+        {onboardForm.role === Role.MEMBER ? (
+          <View style={{ gap: spacing.md }}>
+            <Text style={styles.fieldCaption}>Directorate</Text>
+            <ChipRow wrap>
+              <Chip
+                label="None"
+                active={!onboardForm.directorateId}
+                onPress={() =>
+                  setOnboardForm((f) => ({
+                    ...f,
+                    directorateId: "",
+                    deskId: "",
+                    serviceUnitId: "",
+                  }))
+                }
+              />
+              {(directorates ?? []).map((d) => (
+                <Chip
+                  key={d.id}
+                  label={d.name.replace(/\s+Directorate$/, "")}
+                  active={onboardForm.directorateId === d.id}
+                  onPress={() =>
+                    setOnboardForm((f) => ({
+                      ...f,
+                      directorateId: d.id,
+                      deskId: "",
+                      serviceUnitId: "",
+                    }))
+                  }
+                />
+              ))}
+            </ChipRow>
+            {onboardForm.directorateId ? (
+              <>
+                <Text style={styles.fieldCaption}>Office</Text>
+                <ChipRow wrap>
+                  {MEMBER_OFFICES.map((o) => (
+                    <Chip
+                      key={o.value}
+                      label={o.label}
+                      active={onboardForm.office === o.value}
+                      onPress={() =>
+                        setOnboardForm((f) => ({
+                          ...f,
+                          office: o.value,
+                          deskId: "",
+                        }))
+                      }
+                    />
+                  ))}
+                </ChipRow>
+                {(onboardForm.office === "DESK_HEAD" ||
+                  onboardForm.office === "DEPUTY_DESK_HEAD") &&
+                directorateDesks.length > 0 ? (
+                  <>
+                    <Text style={styles.fieldCaption}>Desk</Text>
+                    <ChipRow wrap>
+                      {directorateDesks.map((desk) => (
+                        <Chip
+                          key={desk.id}
+                          label={desk.name}
+                          active={onboardForm.deskId === desk.id}
+                          onPress={() =>
+                            setOnboardForm((f) => ({ ...f, deskId: desk.id }))
+                          }
+                        />
+                      ))}
+                    </ChipRow>
+                  </>
+                ) : null}
+                {(() => {
+                  const units = serviceUnits.filter(
+                    (u) =>
+                      u.directorate.id === onboardForm.directorateId &&
+                      u.coordinator === null &&
+                      (!onboardForm.branchId ||
+                        u.branch.id === onboardForm.branchId),
+                  );
+                  return units.length > 0 ? (
+                    <>
+                      <Text style={styles.fieldCaption}>
+                        Service unit to coordinate (optional)
+                      </Text>
+                      <ChipRow wrap>
+                        <Chip
+                          label="None"
+                          active={!onboardForm.serviceUnitId}
+                          onPress={() =>
+                            setOnboardForm((f) => ({ ...f, serviceUnitId: "" }))
+                          }
+                        />
+                        {units.map((u) => (
+                          <Chip
+                            key={u.id}
+                            label={`${u.unitType.name} · ${u.branch.name}`}
+                            active={onboardForm.serviceUnitId === u.id}
+                            onPress={() =>
+                              setOnboardForm((f) => ({
+                                ...f,
+                                serviceUnitId: u.id,
+                                branchId: u.branch.id,
+                              }))
+                            }
+                          />
+                        ))}
+                      </ChipRow>
+                    </>
+                  ) : null;
+                })()}
+              </>
+            ) : null}
+          </View>
+        ) : null}
         {onboardError ? <InlineNotice message={onboardError} /> : null}
         <View style={styles.modalActions}>
           <View style={{ flex: 1 }}>

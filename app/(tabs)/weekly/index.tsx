@@ -81,6 +81,7 @@ export default function WeeklyIndexScreen() {
 
   const canSubmit = canSubmitWeekly(user);
   const isAdmin = user?.role === "ADMIN";
+  const member = user?.role === "MEMBER";
   const districtPastor = isDistrictPastor(user);
   const zonal = isZonalPastor(user);
   const statePastor = isStatePastor(user);
@@ -199,7 +200,7 @@ export default function WeeklyIndexScreen() {
     })();
   }
 
-  const subtitle = isAdmin
+  const subtitle = isAdmin || member
     ? "Directorate line"
     : hq
     ? "National weekly reports"
@@ -250,7 +251,7 @@ export default function WeeklyIndexScreen() {
         }
       >
         <View style={styles.body}>
-          {!isAdmin ? (
+          {!isAdmin && !member ? (
             <SurfaceCard style={styles.weekCard}>
               <WeekPicker weekOf={weekOf} onChange={setWeekOf} />
             </SurfaceCard>
