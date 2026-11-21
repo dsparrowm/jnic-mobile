@@ -46,8 +46,9 @@ export function BranchHomeMetrics({
       <Text style={styles.section}>This week</Text>
       <SurfaceCard style={styles.card}>
         <View style={styles.row}>
-          <MetricCell label="Adults" value={attendance?.adultCount} />
-          <MetricCell label="Teens" value={attendance?.teenageCount} />
+          <MetricCell label="Men" value={attendance?.menCount} />
+          <MetricCell label="Women" value={attendance?.womenCount} />
+          <MetricCell label="Youth" value={attendance?.youthCount} />
           <MetricCell label="Children" value={attendance?.childrenCount} />
         </View>
         <View style={styles.divider} />

@@ -6,8 +6,10 @@ import {
   type FeedbackRecord,
   type HqDashboardResponse,
   type PastorDashboardResponse,
+  type DistrictSummaryResponse,
   type NationalSummaryResponse,
   type NotificationListResponse,
+  type RegionSummaryResponse,
   type StateSummaryResponse,
   type WeeklyReportInput,
   type WeeklyReportListResponse,
@@ -595,6 +597,30 @@ export const api = {
 
   getWeeklyReport: (id: string, signal?: AbortSignal) =>
     request<WeeklyReportRecord>(`/reports/weekly/${id}`, { signal }),
+
+  getDistrictSummary: (weekOf: string, signal?: AbortSignal) =>
+    request<DistrictSummaryResponse>(
+      `/reports/district/summary?weekOf=${encodeURIComponent(weekOf)}`,
+      { signal },
+    ),
+
+  forwardDistrictReport: (weekOf: string) =>
+    request<DistrictSummaryResponse>(
+      `/reports/district/${encodeURIComponent(weekOf)}/forward`,
+      { method: "POST" },
+    ),
+
+  getRegionSummary: (weekOf: string, signal?: AbortSignal) =>
+    request<RegionSummaryResponse>(
+      `/reports/region/summary?weekOf=${encodeURIComponent(weekOf)}`,
+      { signal },
+    ),
+
+  forwardRegionReport: (weekOf: string) =>
+    request<RegionSummaryResponse>(
+      `/reports/region/${encodeURIComponent(weekOf)}/forward`,
+      { method: "POST" },
+    ),
 
   getZoneSummary: (weekOf: string, signal?: AbortSignal) =>
     request<ZoneSummaryResponse>(

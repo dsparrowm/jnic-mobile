@@ -17,8 +17,9 @@ export function TotalsCard({
     <SurfaceCard style={styles.card}>
       <Text style={styles.title}>{title}</Text>
       <View style={styles.grid}>
-        <Stat label="Adults" value={formatCount(attendance.adultCount)} />
-        <Stat label="Teenagers" value={formatCount(attendance.teenageCount)} />
+        <Stat label="Men" value={formatCount(attendance.menCount)} />
+        <Stat label="Women" value={formatCount(attendance.womenCount)} />
+        <Stat label="Youth" value={formatCount(attendance.youthCount)} />
         <Stat label="Children" value={formatCount(attendance.childrenCount)} />
         <Stat label="Tithe" value={formatMoney(finance.tithe, finance.currency)} />
         <Stat label="Offering" value={formatMoney(finance.offering, finance.currency)} />

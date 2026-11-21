@@ -44,7 +44,10 @@ export function BranchRows({
         const people = report?.attendance
           ? report.attendance.adultCount +
             report.attendance.teenageCount +
-            report.attendance.childrenCount
+            report.attendance.childrenCount +
+            report.attendance.menCount +
+            report.attendance.womenCount +
+            report.attendance.youthCount
           : null;
         const income = report?.finance
           ? report.finance.tithe + report.finance.offering + report.finance.other
