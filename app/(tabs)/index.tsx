@@ -44,11 +44,12 @@ function useRefreshOnFocus(refresh: () => Promise<unknown>) {
 
 const TASK_ROUTES: Record<
   HqHomeTaskKind,
-  "/pastors" | "/weekly" | "/approvals"
+  "/pastors" | "/weekly" | "/approvals" | "/org"
 > = {
   PENDING_ONBOARDING: "/pastors",
   MISSED_REPORTS: "/weekly",
   PENDING_SUMMARY_APPROVALS: "/approvals",
+  DIRECTORATE_VACANCIES: "/org",
 };
 
 function HqHome() {
