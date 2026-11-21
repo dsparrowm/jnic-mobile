@@ -42,7 +42,7 @@ import { SheetHeader } from "@/src/components/premium/sheet-header";
 import { showAppAlert } from "@/src/components/premium/app-alert";
 import { humanizeStatus } from "@/src/lib/format";
 import { useAuth } from "@/src/lib/session";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import {
   colors,
   layout,
@@ -337,6 +337,7 @@ export default function PastorsScreen() {
   const [reassignInitial, setReassignInitial] = useState<OrgForm | null>(null);
   const [reassignBusy, setReassignBusy] = useState(false);
   const [reassignError, setReassignError] = useState<string | null>(null);
+  const [reassignNote, setReassignNote] = useState("");
 
   const [actionPastor, setActionPastor] = useState<PastorRecord | null>(null);
 
@@ -468,6 +469,7 @@ export default function PastorsScreen() {
         stateId: reassignForm.stateId || null,
         zoneId: reassignForm.zoneId || null,
         branchId: reassignForm.branchId || null,
+        note: reassignNote.trim() || undefined,
       });
       setReassignPastor(null);
       setReassignInitial(null);
@@ -551,6 +553,7 @@ export default function PastorsScreen() {
     };
     setReassignForm(next);
     setReassignInitial(next);
+    setReassignNote("");
     setReassignError(null);
     setReassignPastor(pastor);
   }
@@ -885,6 +888,12 @@ export default function PastorsScreen() {
           value={reassignForm}
           onChange={setReassignForm}
         />
+        <Field
+          label="Move note (optional)"
+          value={reassignNote}
+          onChangeText={setReassignNote}
+          placeholder="e.g. Transferred to cover Victoria Island"
+        />
         {reassignError ? <InlineNotice message={reassignError} /> : null}
         <View style={styles.modalActions}>
           <View style={{ flex: 1 }}>
@@ -931,6 +940,22 @@ export default function PastorsScreen() {
                 onPress={() => openReassign(actionPastor)}
               >
                 <Text style={styles.actionRowText}>Reassign</Text>
+              </Pressable>
+            ) : null}
+            {canManage ? (
+              <Pressable
+                accessibilityRole="button"
+                style={styles.actionRow}
+                onPress={() => {
+                  const target = actionPastor;
+                  setActionPastor(null);
+                  router.push({
+                    pathname: "/moves",
+                    params: { id: target.id, name: target.name },
+                  });
+                }}
+              >
+                <Text style={styles.actionRowText}>Move history</Text>
               </Pressable>
             ) : null}
             {canManage && actionPastor.status !== UserStatus.DEACTIVATED ? (

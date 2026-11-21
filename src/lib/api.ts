@@ -214,6 +214,15 @@ export interface TemplateReportRecord {
   submittedBy?: { id: string; name: string; role: string };
 }
 
+export interface PersonnelMoveRecord {
+  id: string;
+  kind: "TERRITORY" | "SEAT" | "UNIT" | "STATUS";
+  summary: string;
+  note: string | null;
+  actor: { id: string; name: string };
+  createdAt: string;
+}
+
 export interface ServiceUnitRecord {
   id: string;
   branch: { id: string; name: string };
@@ -669,12 +678,16 @@ export const api = {
       zoneId?: string | null;
       districtId?: string | null;
       branchId?: string | null;
+      note?: string;
     },
   ) =>
     request<UserRecord>(`/users/${userId}/reassign`, {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
+
+  listUserMoves: (userId: string) =>
+    request<PersonnelMoveRecord[]>(`/users/${userId}/moves`),
 
   getOrgTree: () => request<OrgTreeResponse>("/org/tree"),
   listMyReportTemplates: () =>
@@ -723,10 +736,27 @@ export const api = {
       deskId?: string;
       agreedWeeklyHours?: number;
       termYears?: number;
+      note?: string;
     },
   ) =>
     request<unknown>(
       `/directorates/${encodeURIComponent(directorateId)}/assignments`,
+      { method: "POST", body: JSON.stringify(data) },
+    ),
+
+  transferDirectorateAssignment: (
+    directorateId: string,
+    data: {
+      userId: string;
+      office: string;
+      deskId?: string;
+      agreedWeeklyHours?: number;
+      termYears?: number;
+      note?: string;
+    },
+  ) =>
+    request<unknown>(
+      `/directorates/${encodeURIComponent(directorateId)}/assignments/transfer`,
       { method: "POST", body: JSON.stringify(data) },
     ),
 
@@ -736,10 +766,14 @@ export const api = {
       { method: "DELETE" },
     ),
 
-  setServiceUnitCoordinator: (unitId: string, coordinatorId: string | null) =>
+  setServiceUnitCoordinator: (
+    unitId: string,
+    coordinatorId: string | null,
+    note?: string,
+  ) =>
     request<unknown>(`/directorates/units/${encodeURIComponent(unitId)}`, {
       method: "PATCH",
-      body: JSON.stringify({ coordinatorId }),
+      body: JSON.stringify({ coordinatorId, note }),
     }),
 
   createRegion: (data: { name: string }) =>

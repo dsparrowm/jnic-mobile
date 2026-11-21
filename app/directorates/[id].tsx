@@ -70,6 +70,8 @@ export default function DirectorateDetailScreen() {
   const [deskId, setDeskId] = useState("");
   const [saving, setSaving] = useState(false);
   const [sheetError, setSheetError] = useState<string | null>(null);
+  const [moveNote, setMoveNote] = useState("");
+  const [transferIntent, setTransferIntent] = useState(false);
 
   // Coordinator sheet state
   const [coordUnit, setCoordUnit] = useState<ServiceUnitRecord | null>(null);
@@ -168,6 +170,8 @@ export default function DirectorateDetailScreen() {
     setDeskId("");
     setSearch("");
     setSheetError(null);
+    setMoveNote("");
+    setTransferIntent(false);
     setAssignOpen(true);
     void loadPeople();
   }
@@ -177,6 +181,7 @@ export default function DirectorateDetailScreen() {
     setPersonId("");
     setSearch("");
     setSheetError(null);
+    setMoveNote("");
     void loadPeople();
   }
 
@@ -185,17 +190,32 @@ export default function DirectorateDetailScreen() {
     setSaving(true);
     setSheetError(null);
     try {
-      await api.upsertDirectorateAssignment(detail.id, {
+      const payload = {
         userId: personId,
         office,
         deskId: DESK_OFFICES.has(office) && deskId ? deskId : undefined,
-      });
+        note: moveNote.trim() || undefined,
+      };
+      if (transferIntent) {
+        await api.transferDirectorateAssignment(detail.id, payload);
+      } else {
+        await api.upsertDirectorateAssignment(detail.id, payload);
+      }
       setAssignOpen(false);
       await load();
     } catch (err) {
-      setSheetError(
-        err instanceof ApiError ? err.message : "Could not assign seat",
-      );
+      if (
+        err instanceof ApiError &&
+        err.status === 409 &&
+        err.message.includes("already belongs")
+      ) {
+        setTransferIntent(true);
+        setSheetError(`${err.message}. Tap Assign again to move them here.`);
+      } else {
+        setSheetError(
+          err instanceof ApiError ? err.message : "Could not assign seat",
+        );
+      }
     } finally {
       setSaving(false);
     }
@@ -206,7 +226,11 @@ export default function DirectorateDetailScreen() {
     setSaving(true);
     setSheetError(null);
     try {
-      await api.setServiceUnitCoordinator(coordUnit.id, personId || null);
+      await api.setServiceUnitCoordinator(
+        coordUnit.id,
+        personId || null,
+        moveNote.trim() || undefined,
+      );
       setCoordUnit(null);
       await load();
     } catch (err) {
@@ -513,7 +537,10 @@ export default function DirectorateDetailScreen() {
           onClose={() => (saving ? null : setAssignOpen(false))}
           closeDisabled={saving}
         />
-        {personPicker(personId, setPersonId)}
+        {personPicker(personId, (pid) => {
+          setPersonId(pid);
+          setTransferIntent(false);
+        })}
         <Text style={styles.label}>Office</Text>
         <ChipRow wrap>
           {OFFICES.map((o) => (
@@ -540,9 +567,15 @@ export default function DirectorateDetailScreen() {
             </ChipRow>
           </>
         ) : null}
+        <Field
+          label="Move note (optional)"
+          value={moveNote}
+          onChangeText={setMoveNote}
+          placeholder="e.g. Moved to support the new media desk"
+        />
         {sheetError ? <InlineNotice message={sheetError} /> : null}
         <PrimaryButton
-          label="Assign"
+          label={transferIntent ? "Move seat here" : "Assign"}
           loading={saving}
           onPress={() => void submitAssign()}
           disabled={saving || !personId}
@@ -561,6 +594,12 @@ export default function DirectorateDetailScreen() {
           closeDisabled={saving}
         />
         {personPicker(personId, setPersonId)}
+        <Field
+          label="Move note (optional)"
+          value={moveNote}
+          onChangeText={setMoveNote}
+          placeholder="e.g. Handover from previous coordinator"
+        />
         {sheetError ? <InlineNotice message={sheetError} /> : null}
         <PrimaryButton
           label="Save coordinator"
