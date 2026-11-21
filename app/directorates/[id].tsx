@@ -343,7 +343,7 @@ export default function DirectorateDetailScreen() {
       ) : (
         <ScrollView contentContainerStyle={styles.body}>
           {detail.mandate ? (
-            <SurfaceCard>
+            <SurfaceCard style={styles.padCard}>
               <Text style={styles.mandate}>{detail.mandate}</Text>
             </SurfaceCard>
           ) : null}
@@ -457,7 +457,7 @@ export default function DirectorateDetailScreen() {
                 meta={`${units.length}`}
               />
               {units.length === 0 ? (
-                <SurfaceCard>
+                <SurfaceCard style={styles.padCard}>
                   <Text style={styles.muted}>
                     No service units for this directorate yet.
                   </Text>
@@ -595,11 +595,16 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bgBase },
   body: {
     paddingHorizontal: layout.screenPad,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.xl,
-    gap: spacing.xs,
+    gap: spacing.md,
   },
   mandate: { ...typography.body, color: colors.textMuted },
-  flushCard: { paddingVertical: spacing.xs },
+  padCard: { padding: spacing.md },
+  flushCard: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
   seatRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -649,12 +654,11 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: colors.warning,
   },
-  branchGroup: { marginTop: spacing.xs, gap: 2 },
+  branchGroup: { gap: spacing.xs },
   branchLabel: {
     ...typography.caption,
     fontWeight: "700",
     color: colors.goldText,
-    marginBottom: 2,
     marginLeft: 2,
   },
   unitAction: {
