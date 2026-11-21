@@ -9,7 +9,7 @@ import {
   View,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { NIGERIAN_STATES } from "@repo/types";
 import {
   api,
@@ -62,7 +62,10 @@ export default function OrgScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [view, setView] = useState<"territory" | "directorates">("territory");
+  const params = useLocalSearchParams<{ view?: string }>();
+  const [view, setView] = useState<"territory" | "directorates">(
+    params.view === "directorates" ? "directorates" : "territory",
+  );
   const [directorates, setDirectorates] = useState<DirectorateRecord[]>([]);
   const [dirLoaded, setDirLoaded] = useState(false);
 
