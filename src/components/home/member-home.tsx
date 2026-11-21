@@ -269,6 +269,13 @@ export function MemberHome({ user }: { user: AuthUser }) {
                       detail="Welfare and discipline cases — confidential, counts feed your D-reports"
                       onPress={() => router.push("/cases" as never)}
                     />
+                    <View style={styles.rowDivider} />
+                    <ManageRow
+                      icon="star-half-outline"
+                      title="Appraisals"
+                      detail="Mid-year and year-end records for pastors and workers"
+                      onPress={() => router.push("/appraisals" as never)}
+                    />
                   </SurfaceCard>
                 </>
               ) : null}

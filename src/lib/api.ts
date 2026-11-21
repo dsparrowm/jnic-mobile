@@ -252,6 +252,27 @@ export interface CaseRegisters {
   discipline: boolean;
 }
 
+export interface PersonnelAppraisalRecord {
+  id: string;
+  period: "MID_YEAR" | "YEAR_END";
+  year: number;
+  subject: { id: string; name: string; role: string };
+  reviewer: { id: string; name: string };
+  score: number | null;
+  strengths: string | null;
+  development: string | null;
+  recommendation: string | null;
+  submitted: boolean;
+  createdAt: string;
+}
+
+export interface AppraisalCounts {
+  year: number;
+  period: string | null;
+  total: number;
+  submitted: number;
+}
+
 export interface ServiceUnitRecord {
   id: string;
   branch: { id: string; name: string };
@@ -758,6 +779,59 @@ export const api = {
   caseCounts: (kind: string, year: number, month: number) =>
     request<PersonnelCaseCounts>(
       `/cases/counts?kind=${kind}&year=${year}&month=${month}`,
+    ),
+
+  myAppraisalAccess: () =>
+    request<{ appraisals: boolean }>("/appraisals/my-access"),
+
+  listAppraisals: (filters: {
+    period?: string;
+    year?: number;
+    subjectId?: string;
+  }) => {
+    const params = new URLSearchParams();
+    if (filters.period) params.set("period", filters.period);
+    if (filters.year) params.set("year", String(filters.year));
+    if (filters.subjectId) params.set("subjectId", filters.subjectId);
+    const qs = params.toString();
+    return request<PersonnelAppraisalRecord[]>(
+      `/appraisals${qs ? `?${qs}` : ""}`,
+    );
+  },
+
+  upsertAppraisal: (data: {
+    subjectId: string;
+    period: string;
+    year: number;
+    score?: number | null;
+    strengths?: string;
+    development?: string;
+    recommendation?: string;
+    submitted?: boolean;
+  }) =>
+    request<PersonnelAppraisalRecord>("/appraisals", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  updateAppraisal: (
+    id: string,
+    data: {
+      score?: number | null;
+      strengths?: string;
+      development?: string;
+      recommendation?: string;
+      submitted?: boolean;
+    },
+  ) =>
+    request<PersonnelAppraisalRecord>(`/appraisals/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  appraisalCounts: (year: number, period?: string) =>
+    request<AppraisalCounts>(
+      `/appraisals/counts?year=${year}${period ? `&period=${period}` : ""}`,
     ),
 
   getOrgTree: () => request<OrgTreeResponse>("/org/tree"),
