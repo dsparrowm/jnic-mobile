@@ -70,13 +70,19 @@ export interface UserRecord {
   phone: string | null;
   role: Role;
   status: string;
+  hrPersonnel?: boolean;
   profilePicUrl: string | null;
   stateId: string | null;
   zoneId: string | null;
   branchId: string | null;
+  regionId?: string | null;
+  districtId?: string | null;
   stateName?: string | null;
   zoneName?: string | null;
   branchName?: string | null;
+  regionName?: string | null;
+  districtName?: string | null;
+  directorate?: AuthUser["directorate"];
   onboardingTokenExpiry: string | null;
   createdAt: string;
 }
