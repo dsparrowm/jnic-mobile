@@ -17,6 +17,7 @@ import {
   RefreshErrorBanner,
 } from "@/src/components/home/home-states";
 import { AdminHome } from "@/src/components/home/admin-home";
+import { MemberHome } from "@/src/components/home/member-home";
 import { PastorHome } from "@/src/components/home/pastor-home";
 import { RecentActivity } from "@/src/components/home/recent-activity";
 import { WeeklyHealthCard } from "@/src/components/home/weekly-health-card";
@@ -151,6 +152,9 @@ export default function HomeScreen() {
   const { user, isHq } = useAuth();
   if (user?.role === Role.ADMIN) {
     return <AdminHome user={user} />;
+  }
+  if (user?.role === Role.MEMBER) {
+    return <MemberHome user={user} />;
   }
   if (user && !isHq) {
     return <PastorHome user={user} />;

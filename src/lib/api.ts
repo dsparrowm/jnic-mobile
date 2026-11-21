@@ -636,6 +636,10 @@ export const api = {
     stateId?: string;
     zoneId?: string;
     branchId?: string;
+    directorateId?: string;
+    deskId?: string;
+    office?: string;
+    serviceUnitId?: string;
   }) =>
     request<UserRecord>("/onboarding/users", {
       method: "POST",
