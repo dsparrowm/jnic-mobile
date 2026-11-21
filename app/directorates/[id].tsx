@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -30,6 +29,7 @@ import { SheetHeader } from "@/src/components/premium/sheet-header";
 import { InlineNotice, ScreenSkeleton } from "@/src/components/premium/states";
 import { SectionHeader, SurfaceCard } from "@/src/components/premium/screen";
 import { WeeklyStackBar } from "@/src/components/weekly/stack-bar";
+import { showAppAlert } from "@/src/components/premium/app-alert";
 import { colors, layout, radius, spacing, typography } from "@/src/theme/tokens";
 
 const OFFICES: { value: string; label: string }[] = [
@@ -219,23 +219,22 @@ export default function DirectorateDetailScreen() {
   }
 
   function confirmRemove(memberId: string, name: string) {
-    Alert.alert("Remove seat", `Remove ${name} from this directorate?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Remove",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await api.removeDirectorateAssignment(memberId);
-            await load();
-          } catch (err) {
-            setError(
-              err instanceof ApiError ? err.message : "Could not remove seat",
-            );
-          }
-        },
-      },
-    ]);
+    void (async () => {
+      const ok = await showAppAlert(
+        "Remove seat",
+        `Remove ${name} from this directorate?`,
+        { confirmLabel: "Remove", cancelLabel: "Cancel", destructive: true },
+      );
+      if (!ok) return;
+      try {
+        await api.removeDirectorateAssignment(memberId);
+        await load();
+      } catch (err) {
+        setError(
+          err instanceof ApiError ? err.message : "Could not remove seat",
+        );
+      }
+    })();
   }
 
   const leadership = (detail?.members ?? []).filter((m) =>
@@ -516,7 +515,7 @@ export default function DirectorateDetailScreen() {
         />
         {personPicker(personId, setPersonId)}
         <Text style={styles.label}>Office</Text>
-        <ChipRow>
+        <ChipRow wrap>
           {OFFICES.map((o) => (
             <Chip
               key={o.value}

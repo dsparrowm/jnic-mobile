@@ -130,7 +130,7 @@ export default function WeeklySubmitScreen() {
                 <Text style={styles.receiptKicker}>
                   {receipt.branch.name} · week ending {formatWeekEndingLabel(receipt.weekOf)}
                 </Text>
-                <Text style={styles.receiptTitle}>Your zonal pastor has this week</Text>
+                <Text style={styles.receiptTitle}>Report sent for review</Text>
                 <View style={styles.receiptRow}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.totalsLabel}>Attendance</Text>

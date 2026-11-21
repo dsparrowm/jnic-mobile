@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -28,6 +27,8 @@ import {
   PrimaryButton,
 } from "@/src/components/ui";
 import { StatusPill } from "@/src/components/premium/controls";
+import { plural } from "@/src/lib/format";
+import { showAppAlert } from "@/src/components/premium/app-alert";
 import { PremiumHeader } from "@/src/components/premium/screen";
 import { InlineNotice, ScreenSkeleton } from "@/src/components/premium/states";
 import { BottomSheet } from "@/src/components/premium/bottom-sheet";
@@ -166,14 +167,14 @@ export default function OrgScreen() {
       setCreateKind(null);
       return;
     }
-    Alert.alert(
-      "Discard changes?",
-      "The organisation details you entered will be lost.",
-      [
-        { text: "Keep editing", style: "cancel" },
-        { text: "Discard", style: "destructive", onPress: resetForm },
-      ],
-    );
+    void (async () => {
+      const discard = await showAppAlert(
+        "Discard changes?",
+        "The organisation details you entered will be lost.",
+        { confirmLabel: "Discard", cancelLabel: "Keep editing", destructive: true },
+      );
+      if (discard) resetForm();
+    })();
   }
 
   async function submitCreate() {
@@ -256,7 +257,7 @@ export default function OrgScreen() {
             <Text style={styles.stateName}>{state.name}</Text>
           </View>
           <Text style={styles.count}>
-            {state.zones.length} zones · {branchCount} branches
+            {plural(state.zones.length, "zone")} · {plural(branchCount, "branch")}
           </Text>
         </Pressable>
         {open ? (
@@ -284,9 +285,9 @@ export default function OrgScreen() {
                     </View>
                     <Text style={styles.count}>
                       {zone.districts.length > 0
-                        ? `${zone.districts.length} districts · `
+                        ? `${plural(zone.districts.length, "district")} · `
                         : ""}
-                      {zoneBranchCount} branches
+                      {plural(zoneBranchCount, "branch")}
                     </Text>
                   </Pressable>
                   {zoneOpen ? (
@@ -316,7 +317,7 @@ export default function OrgScreen() {
                                 </Text>
                               </View>
                               <Text style={styles.count}>
-                                {district.branches.length} branches
+                                {plural(district.branches.length, "branch")}
                               </Text>
                             </Pressable>
                             {districtOpen
@@ -352,7 +353,7 @@ export default function OrgScreen() {
         title="Organization"
         subtitle="Regions, states, zones, districts, and branches"
         icon="business"
-        right={<StatusPill label={`${allStates.length} states`} tone="info" />}
+        right={<StatusPill label={plural(allStates.length, "state")} tone="info" />}
       />
 
       <View style={styles.segment}>
@@ -474,8 +475,8 @@ export default function OrgScreen() {
                   : "No director seated"}
               </Text>
               <Text style={styles.dirCardMeta}>
-                {d.deskCount} desks · {d.unitTypeCount} unit types ·{" "}
-                {d.memberCount} members
+                {plural(d.deskCount, "desk")} · {plural(d.unitTypeCount, "unit type")} ·{" "}
+                {plural(d.memberCount, "member")}
               </Text>
               <View style={styles.dirCardFooter}>
                 <Text style={styles.dirCardLink}>Open roster</Text>

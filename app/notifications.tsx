@@ -9,9 +9,9 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import type { NotificationRecord } from "@repo/types";
-import { PremiumHeader } from "@/src/components/premium/screen";
-import { ScreenErrorState, ScreenSkeleton } from "@/src/components/premium/states";
-import { GhostButton } from "@/src/components/ui";
+
+import { EmptyPanel, ScreenErrorState, ScreenSkeleton } from "@/src/components/premium/states";
+import { WeeklyStackBar } from "@/src/components/weekly/stack-bar";
 import { useNotifications } from "@/src/hooks/use-notifications";
 import { openNotificationTarget } from "@/src/lib/notifications";
 import { colors, layout, radius, spacing, typography } from "@/src/theme/tokens";
@@ -81,19 +81,14 @@ export default function NotificationsScreen() {
 
   return (
     <View style={styles.root}>
-      <PremiumHeader
+      <WeeklyStackBar
         title="Notifications"
         subtitle={
           unreadCount > 0
             ? `${unreadCount} unread`
             : "Feedback and report updates"
         }
-        icon="notifications-outline"
-        tone="light"
       />
-      <View style={styles.toolbar}>
-        <GhostButton label="Back" onPress={() => router.back()} />
-      </View>
 
       {loading && items.length === 0 ? <ScreenSkeleton /> : null}
       {error && items.length === 0 ? (
@@ -114,12 +109,11 @@ export default function NotificationsScreen() {
             />
           }
           ListEmptyComponent={
-            <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>No notifications yet</Text>
-              <Text style={styles.emptyBody}>
-                Feedback, forwarding updates, and report reminders will appear here.
-              </Text>
-            </View>
+            <EmptyPanel
+              icon="notifications-outline"
+              title="No notifications yet"
+              body="Feedback, forwarding updates, and report reminders will appear here."
+            />
           }
           renderItem={({ item }) => (
             <NotificationRow
@@ -138,9 +132,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bgBase,
     paddingHorizontal: layout.screenPad,
-  },
-  toolbar: {
-    marginBottom: spacing.sm,
   },
   list: {
     paddingBottom: spacing.xxl,
@@ -192,19 +183,5 @@ const styles = StyleSheet.create({
     ...typography.footnote,
     color: colors.textMuted,
   },
-  empty: {
-    alignItems: "center",
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.md,
-  },
-  emptyTitle: {
-    ...typography.title3,
-    color: colors.textPrimary,
-  },
-  emptyBody: {
-    ...typography.footnote,
-    color: colors.textMuted,
-    textAlign: "center",
-    marginTop: spacing.xs,
-  },
+
 });

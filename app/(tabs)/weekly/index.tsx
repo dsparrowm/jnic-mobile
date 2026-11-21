@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Pressable,
-  Alert,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -48,6 +47,7 @@ import { StateCard, ZoneCard } from "@/src/components/weekly/hierarchy";
 import { TotalsCard } from "@/src/components/weekly/totals-card";
 import { ReportsHero } from "@/src/components/weekly/reports-hero";
 import { WeekPicker } from "@/src/components/weekly/week-picker";
+import { showAppAlert } from "@/src/components/premium/app-alert";
 import {
   reportStatusLabel,
   reportStatusTone,
@@ -160,47 +160,43 @@ export default function WeeklyIndexScreen() {
             waiting.length > 4 ? "…" : ""
           }. Forward anyway?`
         : "All in-scope reports are in. This sends the week upstream.";
-    Alert.alert(
+    const title =
       kind === "district"
         ? "Forward district report?"
         : kind === "zone"
           ? "Forward zone report?"
           : kind === "state"
             ? "Forward state report?"
-            : "Forward region report?",
-      `${coverage} You can re-forward later if a late report makes it stale.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Forward",
-          onPress: () => {
-            void (async () => {
-              setForwarding(true);
-              setError(null);
-              try {
-                if (kind === "district") {
-                  setDistrict(await api.forwardDistrictReport(weekOf));
-                } else if (kind === "zone") {
-                  setZone(await api.forwardZoneReport(weekOf));
-                } else if (kind === "state") {
-                  setState(await api.forwardStateReport(weekOf));
-                } else {
-                  setRegion(await api.forwardRegionReport(weekOf));
-                }
-              } catch (err) {
-                setError(
-                  err instanceof ApiError
-                    ? err.message
-                    : "Could not forward this week.",
-                );
-              } finally {
-                setForwarding(false);
-              }
-            })();
-          },
-        },
-      ],
-    );
+            : "Forward region report?";
+    void (async () => {
+      const ok = await showAppAlert(
+        title,
+        `${coverage} You can re-forward later if a late report makes it stale.`,
+        { confirmLabel: "Forward", cancelLabel: "Cancel" },
+      );
+      if (!ok) return;
+      setForwarding(true);
+      setError(null);
+      try {
+        if (kind === "district") {
+          setDistrict(await api.forwardDistrictReport(weekOf));
+        } else if (kind === "zone") {
+          setZone(await api.forwardZoneReport(weekOf));
+        } else if (kind === "state") {
+          setState(await api.forwardStateReport(weekOf));
+        } else {
+          setRegion(await api.forwardRegionReport(weekOf));
+        }
+      } catch (err) {
+        setError(
+          err instanceof ApiError
+            ? err.message
+            : "Could not forward this week.",
+        );
+      } finally {
+        setForwarding(false);
+      }
+    })();
   }
 
   const subtitle = isAdmin
@@ -334,6 +330,14 @@ export default function WeeklyIndexScreen() {
                 />
               </Pressable>
             </SurfaceCard>
+          ) : null}
+
+          {!loading && isAdmin ? (
+            <EmptyPanel
+              icon="document-text-outline"
+              title="Nothing else to file"
+              body="Weekly B1 reports are filed by branch pastors and flow up the territorial line — district, zone, state, region. Administration stays out of the reporting chain."
+            />
           ) : null}
 
           {!loading && district ? (

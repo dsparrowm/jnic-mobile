@@ -15,6 +15,7 @@ import {
   Fraunces_600SemiBold,
 } from "@expo-google-fonts/fraunces";
 import { AuthProvider, useAuth } from "@/src/lib/session";
+import { AppAlertHost } from "@/src/components/premium/app-alert";
 import { colors } from "@/src/theme/tokens";
 
 void SplashScreen.preventAutoHideAsync().catch(() => undefined);
@@ -125,6 +126,7 @@ export default function RootLayout() {
             />
             <Stack.Screen name="unavailable" />
           </Stack>
+          <AppAlertHost />
         </AuthGate>
       </PhonePreview>
     </AuthProvider>

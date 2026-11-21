@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -15,6 +14,7 @@ import { PremiumHeader, SectionHeader, SurfaceCard } from "@/src/components/prem
 import { InlineNotice, ScreenSkeleton } from "@/src/components/premium/states";
 import { BottomSheet } from "@/src/components/premium/bottom-sheet";
 import { SheetHeader } from "@/src/components/premium/sheet-header";
+import { showAppAlert } from "@/src/components/premium/app-alert";
 import { formatCount, formatMoney, humanizeStatus } from "@/src/lib/format";
 import { colors, fonts, layout, radius, spacing, typography } from "@/src/theme/tokens";
 
@@ -121,7 +121,7 @@ export default function ApprovalsScreen() {
         setReturnNote("");
         await load();
       } catch (err) {
-        Alert.alert(
+        void showAppAlert(
           "Error",
           err instanceof ApiError ? err.message : "Return failed",
         );
@@ -139,7 +139,7 @@ export default function ApprovalsScreen() {
         await api.approveMonthlySummary(item.id);
         await load();
       } catch (err) {
-        Alert.alert(
+        void showAppAlert(
           "Error",
           err instanceof ApiError ? err.message : "Approve failed",
         );

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Alert,
   FlatList,
   Pressable,
   RefreshControl,
@@ -37,6 +36,7 @@ import { PremiumHeader } from "@/src/components/premium/screen";
 import { InlineNotice, ScreenSkeleton } from "@/src/components/premium/states";
 import { BottomSheet } from "@/src/components/premium/bottom-sheet";
 import { SheetHeader } from "@/src/components/premium/sheet-header";
+import { showAppAlert } from "@/src/components/premium/app-alert";
 import { humanizeStatus } from "@/src/lib/format";
 import { useAuth } from "@/src/lib/session";
 import {
@@ -135,7 +135,7 @@ function OrgCascadeFields({
   return (
     <View style={{ gap: spacing.md }}>
       <Text style={styles.fieldCaption}>Role</Text>
-      <ChipRow>
+      <ChipRow wrap>
         {ONBOARDABLE_ROLES.map((role) => (
           <Chip
             key={role}
@@ -357,7 +357,7 @@ export default function PastorsScreen() {
       setOnboardOpen(false);
       setOnboardForm(INITIAL_ONBOARD);
       await load();
-      Alert.alert("Invite sent", "Onboarding email queued for the pastor.");
+      void showAppAlert("Invite sent", "Onboarding email queued for the pastor.");
     } catch (err) {
       setOnboardError(err instanceof ApiError ? err.message : "Onboard failed");
     } finally {
@@ -405,22 +405,18 @@ export default function PastorsScreen() {
       setOnboardOpen(false);
       return;
     }
-    Alert.alert(
-      "Discard invite?",
-      "The information you entered will be lost.",
-      [
-        { text: "Keep editing", style: "cancel" },
-        {
-          text: "Discard",
-          style: "destructive",
-          onPress: () => {
-            setOnboardOpen(false);
-            setOnboardForm(INITIAL_ONBOARD);
-            setOnboardError(null);
-          },
-        },
-      ],
-    );
+    void (async () => {
+      const discard = await showAppAlert(
+        "Discard invite?",
+        "The information you entered will be lost.",
+        { confirmLabel: "Discard", cancelLabel: "Keep editing", destructive: true },
+      );
+      if (discard) {
+        setOnboardOpen(false);
+        setOnboardForm(INITIAL_ONBOARD);
+        setOnboardError(null);
+      }
+    })();
   }
 
   function requestCloseReassign() {
@@ -432,18 +428,14 @@ export default function PastorsScreen() {
       setReassignPastor(null);
       return;
     }
-    Alert.alert(
-      "Discard changes?",
-      "This pastor’s assignment will not be updated.",
-      [
-        { text: "Keep editing", style: "cancel" },
-        {
-          text: "Discard",
-          style: "destructive",
-          onPress: () => setReassignPastor(null),
-        },
-      ],
-    );
+    void (async () => {
+      const discard = await showAppAlert(
+        "Discard changes?",
+        "This pastor’s assignment will not be updated.",
+        { confirmLabel: "Discard", cancelLabel: "Keep editing", destructive: true },
+      );
+      if (discard) setReassignPastor(null);
+    })();
   }
 
   function openActions(pastor: PastorRecord) {
@@ -457,7 +449,7 @@ export default function PastorsScreen() {
         await api.resendOnboarding(pastor.id);
         await load();
       } catch (err) {
-        Alert.alert(
+        void showAppAlert(
           "Error",
           err instanceof ApiError ? err.message : "Resend failed",
         );
@@ -481,30 +473,23 @@ export default function PastorsScreen() {
 
   function confirmDeactivate(pastor: PastorRecord) {
     setActionPastor(null);
-    Alert.alert(
-      "Deactivate pastor?",
-      `${pastor.name} will lose access immediately.`,
-      [
-        { text: CancelLabel, style: "cancel" },
-        {
-          text: "Deactivate",
-          style: "destructive",
-          onPress: () => {
-            void (async () => {
-              try {
-                await api.deactivateUser(pastor.id);
-                await load();
-              } catch (err) {
-                Alert.alert(
-                  "Error",
-                  err instanceof ApiError ? err.message : "Deactivate failed",
-                );
-              }
-            })();
-          },
-        },
-      ],
-    );
+    void (async () => {
+      const ok = await showAppAlert(
+        "Deactivate pastor?",
+        `${pastor.name} will lose access immediately.`,
+        { confirmLabel: "Deactivate", cancelLabel: "Cancel", destructive: true },
+      );
+      if (!ok) return;
+      try {
+        await api.deactivateUser(pastor.id);
+        await load();
+      } catch (err) {
+        void showAppAlert(
+          "Error",
+          err instanceof ApiError ? err.message : "Deactivate failed",
+        );
+      }
+    })();
   }
 
   return (
@@ -752,7 +737,7 @@ export default function PastorsScreen() {
   );
 }
 
-const CancelLabel = "Cancel";
+
 
 const styles = StyleSheet.create({
   root: {

@@ -121,6 +121,31 @@ export default function WeeklyReportDetailScreen() {
                   />
                 ) : null}
 
+                {report.noServiceNote ? (
+                  <SurfaceCard style={styles.noteCard}>
+                    <Text style={styles.noteLabel}>No service held</Text>
+                    <Text style={styles.noteBody}>{report.noServiceNote}</Text>
+                  </SurfaceCard>
+                ) : null}
+                {report.pastoralIssues ? (
+                  <SurfaceCard style={styles.noteCard}>
+                    <Text style={styles.noteLabel}>Pastoral issues</Text>
+                    <Text style={styles.noteBody}>{report.pastoralIssues}</Text>
+                  </SurfaceCard>
+                ) : null}
+                {report.prayerRequests ? (
+                  <SurfaceCard style={styles.noteCard}>
+                    <Text style={styles.noteLabel}>Prayer requests</Text>
+                    <Text style={styles.noteBody}>{report.prayerRequests}</Text>
+                  </SurfaceCard>
+                ) : null}
+                {report.nextWeekPlans ? (
+                  <SurfaceCard style={styles.noteCard}>
+                    <Text style={styles.noteLabel}>Next week plans</Text>
+                    <Text style={styles.noteBody}>{report.nextWeekPlans}</Text>
+                  </SurfaceCard>
+                ) : null}
+
                 {showEdit ? (
                   <GhostButton
                     label="Edit report"
@@ -180,5 +205,19 @@ const styles = StyleSheet.create({
     ...typography.footnote,
     color: colors.textMuted,
     marginTop: 2,
+  },
+  noteCard: {
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  noteLabel: {
+    ...typography.caption,
+    color: colors.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  noteBody: {
+    ...typography.body,
+    color: colors.textPrimary,
   },
 });

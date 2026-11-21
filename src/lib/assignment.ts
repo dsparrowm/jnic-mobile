@@ -20,6 +20,14 @@ export function buildAssignmentView(
     };
   }
 
+  if (user.role === Role.ADMIN) {
+    return {
+      title: "Administration",
+      meta: "Platform operator · Manages people, structure and records",
+      footnote: "",
+    };
+  }
+
   if (isHqUser(user)) {
     return {
       title: "National operations",
