@@ -21,13 +21,23 @@ export type WeeklyFormValues = WeeklyReportInput;
 
 type DraftValues = {
   serviceDate: string;
-  adultCount: string;
-  teenageCount: string;
+  menCount: string;
+  womenCount: string;
+  youthCount: string;
   childrenCount: string;
+  midweekAttendance: string;
+  firstTimeVisitors: string;
+  newConverts: string;
+  followUpVisits: string;
+  unitsActive: string;
+  outreachHeld: string;
   tithe: string;
   offering: string;
   other: string;
   noServiceNote: string;
+  pastoralIssues: string;
+  prayerRequests: string;
+  nextWeekPlans: string;
 };
 
 function toDraft(
@@ -36,13 +46,23 @@ function toDraft(
 ): DraftValues {
   return {
     serviceDate: report?.serviceDate ?? defaultServiceDate,
-    adultCount: report ? String(report.attendance?.adultCount ?? 0) : "",
-    teenageCount: report ? String(report.attendance?.teenageCount ?? 0) : "",
+    menCount: report ? String(report.attendance?.menCount ?? 0) : "",
+    womenCount: report ? String(report.attendance?.womenCount ?? 0) : "",
+    youthCount: report ? String(report.attendance?.youthCount ?? 0) : "",
     childrenCount: report ? String(report.attendance?.childrenCount ?? 0) : "",
+    midweekAttendance: report ? String(report.attendance?.midweekAttendance ?? 0) : "",
+    firstTimeVisitors: report ? String(report.attendance?.firstTimeVisitors ?? 0) : "",
+    newConverts: report ? String(report.attendance?.newConverts ?? 0) : "",
+    followUpVisits: report ? String(report.attendance?.followUpVisits ?? 0) : "",
+    unitsActive: report ? String(report.attendance?.unitsActive ?? 0) : "",
+    outreachHeld: report ? String(report.attendance?.outreachHeld ?? 0) : "",
     tithe: report ? formatAmount(String(report.finance?.tithe ?? 0)) : "",
     offering: report ? formatAmount(String(report.finance?.offering ?? 0)) : "",
     other: report ? formatAmount(String(report.finance?.other ?? 0)) : "",
     noServiceNote: report?.noServiceNote ?? "",
+    pastoralIssues: report?.pastoralIssues ?? "",
+    prayerRequests: report?.prayerRequests ?? "",
+    nextWeekPlans: report?.nextWeekPlans ?? "",
   };
 }
 
@@ -120,37 +140,61 @@ export function WeeklyReportFields({
   const weekEnding = weekOf ? formatWeekEndingLabel(weekOf) : "—";
   const disabled = locked || loading || noService;
 
-  const adults = parseCount(values.adultCount);
-  const teenagers = parseCount(values.teenageCount);
+  const men = parseCount(values.menCount);
+  const women = parseCount(values.womenCount);
+  const youth = parseCount(values.youthCount);
   const children = parseCount(values.childrenCount);
+  const midweek = parseCount(values.midweekAttendance);
+  const visitors = parseCount(values.firstTimeVisitors);
+  const converts = parseCount(values.newConverts);
+  const followUps = parseCount(values.followUpVisits);
+  const unitsActive = parseCount(values.unitsActive);
+  const outreach = parseCount(values.outreachHeld);
   const tithe = parseAmount(values.tithe);
   const offering = parseAmount(values.offering);
   const other = parseAmount(values.other);
 
-  const attendanceTotal = (adults ?? 0) + (teenagers ?? 0) + (children ?? 0);
+  const attendanceTotal =
+    (men ?? 0) + (women ?? 0) + (youth ?? 0) + (children ?? 0);
   const financeTotal = (tithe ?? 0) + (offering ?? 0) + (other ?? 0);
-  const allZero = attendanceTotal === 0 && financeTotal === 0;
+  const allZero =
+    attendanceTotal === 0 && (midweek ?? 0) === 0 && financeTotal === 0;
 
   function parsedValues(): WeeklyFormValues | null {
     if (!values.serviceDate) return null;
+    const trimOrNull = (s: string) => {
+      const next = s.trim();
+      return next.length ? next : null;
+    };
     if (noService) {
       const note = values.noServiceNote.trim();
       if (note.length < NO_SERVICE_NOTE_MIN) return null;
       return {
         serviceDate: values.serviceDate,
-        adultCount: 0,
-        teenageCount: 0,
+        menCount: 0,
+        womenCount: 0,
+        youthCount: 0,
         childrenCount: 0,
+        midweekAttendance: 0,
+        firstTimeVisitors: 0,
+        newConverts: 0,
+        followUpVisits: 0,
+        unitsActive: 0,
+        outreachHeld: 0,
         tithe: 0,
         offering: 0,
         other: 0,
         currency: "NGN",
         noServiceNote: note,
+        pastoralIssues: trimOrNull(values.pastoralIssues),
+        prayerRequests: trimOrNull(values.prayerRequests),
+        nextWeekPlans: trimOrNull(values.nextWeekPlans),
       };
     }
     if (
-      adults === null ||
-      teenagers === null ||
+      men === null ||
+      women === null ||
+      youth === null ||
       children === null ||
       tithe === null ||
       offering === null ||
@@ -160,13 +204,23 @@ export function WeeklyReportFields({
     }
     return {
       serviceDate: values.serviceDate,
-      adultCount: adults,
-      teenageCount: teenagers,
+      menCount: men,
+      womenCount: women,
+      youthCount: youth,
       childrenCount: children,
+      midweekAttendance: midweek ?? 0,
+      firstTimeVisitors: visitors ?? 0,
+      newConverts: converts ?? 0,
+      followUpVisits: followUps ?? 0,
+      unitsActive: unitsActive ?? 0,
+      outreachHeld: outreach ?? 0,
       tithe,
       offering,
       other,
       currency: "NGN",
+      pastoralIssues: trimOrNull(values.pastoralIssues),
+      prayerRequests: trimOrNull(values.prayerRequests),
+      nextWeekPlans: trimOrNull(values.nextWeekPlans),
     };
   }
 
@@ -256,19 +310,27 @@ export function WeeklyReportFields({
 
       <Text style={styles.section}>Attendance</Text>
       <CountField
-        label="Adults"
-        value={values.adultCount}
+        label="Men"
+        value={values.menCount}
         disabled={disabled}
-        onChange={(adultCount) =>
-          setValues((current) => ({ ...current, adultCount }))
+        onChange={(menCount) =>
+          setValues((current) => ({ ...current, menCount }))
         }
       />
       <CountField
-        label="Teenagers"
-        value={values.teenageCount}
+        label="Women"
+        value={values.womenCount}
         disabled={disabled}
-        onChange={(teenageCount) =>
-          setValues((current) => ({ ...current, teenageCount }))
+        onChange={(womenCount) =>
+          setValues((current) => ({ ...current, womenCount }))
+        }
+      />
+      <CountField
+        label="Youth"
+        value={values.youthCount}
+        disabled={disabled}
+        onChange={(youthCount) =>
+          setValues((current) => ({ ...current, youthCount }))
         }
       />
       <CountField
@@ -278,6 +340,91 @@ export function WeeklyReportFields({
         onChange={(childrenCount) =>
           setValues((current) => ({ ...current, childrenCount }))
         }
+      />
+      <CountField
+        label="Midweek attendance"
+        value={values.midweekAttendance}
+        disabled={disabled}
+        onChange={(midweekAttendance) =>
+          setValues((current) => ({ ...current, midweekAttendance }))
+        }
+      />
+
+      <Text style={styles.section}>People &amp; growth</Text>
+      <CountField
+        label="First-time visitors"
+        value={values.firstTimeVisitors}
+        disabled={disabled}
+        onChange={(firstTimeVisitors) =>
+          setValues((current) => ({ ...current, firstTimeVisitors }))
+        }
+      />
+      <CountField
+        label="New converts"
+        value={values.newConverts}
+        disabled={disabled}
+        onChange={(newConverts) =>
+          setValues((current) => ({ ...current, newConverts }))
+        }
+      />
+      <CountField
+        label="Follow-up visits"
+        value={values.followUpVisits}
+        disabled={disabled}
+        onChange={(followUpVisits) =>
+          setValues((current) => ({ ...current, followUpVisits }))
+        }
+      />
+      <CountField
+        label="Service units active"
+        value={values.unitsActive}
+        disabled={disabled}
+        onChange={(unitsActive) =>
+          setValues((current) => ({ ...current, unitsActive }))
+        }
+      />
+      <CountField
+        label="Outreach held"
+        value={values.outreachHeld}
+        disabled={disabled}
+        onChange={(outreachHeld) =>
+          setValues((current) => ({ ...current, outreachHeld }))
+        }
+      />
+
+      <Text style={styles.section}>Notes &amp; plans</Text>
+      <Field
+        label="Pastoral issues"
+        placeholder="Anything needing attention"
+        value={values.pastoralIssues}
+        onChangeText={(pastoralIssues) =>
+          setValues((current) => ({ ...current, pastoralIssues }))
+        }
+        multiline
+        maxLength={2000}
+        editable={!locked && !loading}
+      />
+      <Field
+        label="Prayer requests"
+        placeholder="Requests to pray over"
+        value={values.prayerRequests}
+        onChangeText={(prayerRequests) =>
+          setValues((current) => ({ ...current, prayerRequests }))
+        }
+        multiline
+        maxLength={2000}
+        editable={!locked && !loading}
+      />
+      <Field
+        label="Next week's plans"
+        placeholder="Programmes, visits, targets"
+        value={values.nextWeekPlans}
+        onChangeText={(nextWeekPlans) =>
+          setValues((current) => ({ ...current, nextWeekPlans }))
+        }
+        multiline
+        maxLength={2000}
+        editable={!locked && !loading}
       />
 
       <Text style={styles.section}>Finance</Text>

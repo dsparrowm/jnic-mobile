@@ -14,7 +14,9 @@ import {
   computeWeekOf,
   getTodayInLagos,
   outstandingBranches,
+  type DistrictSummaryResponse,
   type NationalSummaryResponse,
+  type RegionSummaryResponse,
   type StateSummaryResponse,
   type WeeklyReportRecord,
   type ZoneReportBranchRow,
@@ -23,7 +25,9 @@ import {
 import { api, ApiError } from "@/src/lib/api";
 import {
   canSubmitWeekly,
+  isDistrictPastor,
   isHqUser,
+  isRegionalPastor,
   isStatePastor,
   isZonalPastor,
 } from "@/src/lib/auth";
@@ -58,8 +62,12 @@ export default function WeeklyIndexScreen() {
   const [branchReport, setBranchReport] = useState<WeeklyReportRecord | null>(
     null,
   );
+  const [district, setDistrict] = useState<DistrictSummaryResponse | null>(
+    null,
+  );
   const [zone, setZone] = useState<ZoneSummaryResponse | null>(null);
   const [state, setState] = useState<StateSummaryResponse | null>(null);
+  const [region, setRegion] = useState<RegionSummaryResponse | null>(null);
   const [national, setNational] = useState<NationalSummaryResponse | null>(
     null,
   );
@@ -70,8 +78,10 @@ export default function WeeklyIndexScreen() {
   const [forwarding, setForwarding] = useState(false);
 
   const canSubmit = canSubmitWeekly(user);
+  const districtPastor = isDistrictPastor(user);
   const zonal = isZonalPastor(user);
   const statePastor = isStatePastor(user);
+  const regional = isRegionalPastor(user);
   const hq = isHqUser(user);
 
   const load = useCallback(async () => {
@@ -106,8 +116,11 @@ export default function WeeklyIndexScreen() {
       setBranchReport(null);
       setBranchKnown(true);
     }
+    if (districtPastor)
+      tasks.push(settle(api.getDistrictSummary(weekOf), setDistrict));
     if (zonal) tasks.push(settle(api.getZoneSummary(weekOf), setZone));
     if (statePastor) tasks.push(settle(api.getStateSummary(weekOf), setState));
+    if (regional) tasks.push(settle(api.getRegionSummary(weekOf), setRegion));
     if (hq) tasks.push(settle(api.getNationalSummary(weekOf), setNational));
     await Promise.all(tasks);
     if (failed) {
@@ -117,7 +130,7 @@ export default function WeeklyIndexScreen() {
     }
     setLoading(false);
     setRefreshing(false);
-  }, [canSubmit, hq, statePastor, weekOf, zonal]);
+  }, [canSubmit, districtPastor, hq, regional, statePastor, weekOf, zonal]);
 
   const retry = useCallback(() => {
     setLoading(true);
@@ -134,7 +147,7 @@ export default function WeeklyIndexScreen() {
   }
 
   function confirmForward(
-    kind: "zone" | "state",
+    kind: "district" | "zone" | "state" | "region",
     outstanding: ZoneReportBranchRow[],
   ) {
     const waiting = outstanding.map((row) => row.branch.name);
@@ -145,7 +158,13 @@ export default function WeeklyIndexScreen() {
           }. Forward anyway?`
         : "All in-scope reports are in. This sends the week upstream.";
     Alert.alert(
-      kind === "zone" ? "Forward zone report?" : "Forward state report?",
+      kind === "district"
+        ? "Forward district report?"
+        : kind === "zone"
+          ? "Forward zone report?"
+          : kind === "state"
+            ? "Forward state report?"
+            : "Forward region report?",
       `${coverage} You can re-forward later if a late report makes it stale.`,
       [
         { text: "Cancel", style: "cancel" },
@@ -156,10 +175,14 @@ export default function WeeklyIndexScreen() {
               setForwarding(true);
               setError(null);
               try {
-                if (kind === "zone") {
+                if (kind === "district") {
+                  setDistrict(await api.forwardDistrictReport(weekOf));
+                } else if (kind === "zone") {
                   setZone(await api.forwardZoneReport(weekOf));
-                } else {
+                } else if (kind === "state") {
                   setState(await api.forwardStateReport(weekOf));
+                } else {
+                  setRegion(await api.forwardRegionReport(weekOf));
                 }
               } catch (err) {
                 setError(
@@ -179,11 +202,15 @@ export default function WeeklyIndexScreen() {
 
   const subtitle = hq
     ? "National weekly reports"
-    : zonal
-      ? "Zone weekly reports"
+    : regional
+      ? "Region weekly reports"
       : statePastor
         ? "State weekly reports"
-        : "Your weekly report";
+        : zonal
+          ? "Zone weekly reports"
+          : districtPastor
+            ? "District weekly reports"
+            : "Your weekly report";
 
   const heroMeta = [
     user?.branchName,
@@ -280,6 +307,56 @@ export default function WeeklyIndexScreen() {
             </>
           ) : null}
 
+          {!loading && district ? (
+            <>
+              <SectionHeader title="District review" meta={district.district.name} />
+              <ExceptionCard
+                branches={district.branches}
+                onOpenReport={openReport}
+              />
+              <SummaryStrip summary={district.summary} />
+              {district.summary.submitted > 0 ? (
+                <TotalsCard
+                  title="District totals"
+                  attendance={district.totals.attendance}
+                  finance={district.totals.finance}
+                />
+              ) : null}
+              <View style={styles.forwardRow}>
+                <StatusPill
+                  label={rollupLabel(district.rollup.status)}
+                  tone={rollupTone(district.rollup.status)}
+                />
+                <PrimaryButton
+                  label={
+                    district.rollup.status === RollupStatus.FORWARDED
+                      ? "Re-forward to zone"
+                      : "Forward to zone"
+                  }
+                  loading={forwarding}
+                  disabled={forwarding}
+                  onPress={() =>
+                    confirmForward(
+                      "district",
+                      outstandingBranches(district.branches),
+                    )
+                  }
+                />
+              </View>
+              <ZoneCard
+                zone={{
+                  zone: district.district,
+                  rollup: district.rollup,
+                  forwarded: true,
+                  totals: district.totals,
+                  branches: district.branches,
+                  summary: district.summary,
+                }}
+                onOpenReport={openReport}
+              />
+            </>
+          ) : null}
+
           {!loading && zone ? (
             <>
               <SectionHeader title="Zone review" meta={zone.zone.name} />
@@ -359,6 +436,69 @@ export default function WeeklyIndexScreen() {
                 <ZoneCard
                   key={item.zone.id}
                   zone={item}
+                  onOpenReport={openReport}
+                />
+              ))}
+            </>
+          ) : null}
+
+          {!loading && region ? (
+            <>
+              <SectionHeader title="Region review" meta={region.region.name} />
+              <ExceptionCard
+                branches={region.states.flatMap((item) => item.branches)}
+                onOpenReport={openReport}
+              />
+              <SummaryStrip summary={region.summary} />
+              {region.summary.submitted > 0 ? (
+                <TotalsCard
+                  title="Region totals"
+                  attendance={region.totals.attendance}
+                  finance={region.totals.finance}
+                />
+              ) : null}
+              <View style={styles.forwardRow}>
+                <StatusPill
+                  label={rollupLabel(region.rollup.status)}
+                  tone={rollupTone(region.rollup.status)}
+                />
+                <PrimaryButton
+                  label={
+                    region.rollup.status === RollupStatus.FORWARDED
+                      ? "Re-forward to HQ"
+                      : "Forward to HQ"
+                  }
+                  loading={forwarding}
+                  disabled={forwarding}
+                  onPress={() =>
+                    confirmForward(
+                      "region",
+                      outstandingBranches(
+                        region.states.flatMap((item) => item.branches),
+                      ),
+                    )
+                  }
+                />
+              </View>
+              {region.states.map((item) => (
+                <StateCard
+                  key={item.state.id}
+                  state={{
+                    state: item.state,
+                    rollup: item.rollup,
+                    totals: item.totals,
+                    zones: [
+                      {
+                        zone: { id: item.state.id, name: item.state.name },
+                        rollup: item.rollup,
+                        forwarded: item.forwarded,
+                        totals: item.totals,
+                        branches: item.branches,
+                        summary: item.summary,
+                      },
+                    ],
+                    summary: item.summary,
+                  }}
                   onOpenReport={openReport}
                 />
               ))}

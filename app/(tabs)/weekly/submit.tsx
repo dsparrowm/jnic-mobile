@@ -84,7 +84,10 @@ export default function WeeklySubmitScreen() {
   const people =
     (attendance?.adultCount ?? 0) +
     (attendance?.teenageCount ?? 0) +
-    (attendance?.childrenCount ?? 0);
+    (attendance?.childrenCount ?? 0) +
+    (attendance?.menCount ?? 0) +
+    (attendance?.womenCount ?? 0) +
+    (attendance?.youthCount ?? 0);
   const income =
     (finance?.tithe ?? 0) + (finance?.offering ?? 0) + (finance?.other ?? 0);
 

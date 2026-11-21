@@ -67,7 +67,15 @@ export function isLeadPastor(user: AuthUser | null): boolean {
 }
 
 export function isHqUser(user: AuthUser | null): boolean {
-  return isAdmin(user) || isLeadPastor(user);
+  return isLeadPastor(user);
+}
+
+export function isDistrictPastor(user: AuthUser | null): boolean {
+  return user?.role === "DISTRICT_PASTOR";
+}
+
+export function isRegionalPastor(user: AuthUser | null): boolean {
+  return user?.role === "REGIONAL_PASTOR";
 }
 
 export function isZonalPastor(user: AuthUser | null): boolean {
