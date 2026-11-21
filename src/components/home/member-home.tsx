@@ -138,6 +138,7 @@ export function MemberHome({ user }: { user: AuthUser }) {
   );
 
   const directorate = user.directorate ?? null;
+  const hrPersonnel = user.hrPersonnel === true;
   const openDuties = () => router.push("/weekly/duties" as never);
   const openNotifications = () => router.push("/notifications" as never);
 
@@ -229,6 +230,38 @@ export function MemberHome({ user }: { user: AuthUser }) {
                         />
                       ) : null}
                     </Pressable>
+                  </SurfaceCard>
+                </>
+              ) : null}
+
+              {hrPersonnel ? (
+                <>
+                  <SectionHeader title="HR desk" />
+                  <SurfaceCard style={styles.manageCard}>
+                    <ManageRow
+                      icon="people-outline"
+                      title="People"
+                      detail="Roster of pastors, workers and unit leaders — reassign, deactivate"
+                      onPress={() => router.push("/pastors" as never)}
+                    />
+                    <View style={styles.rowDivider} />
+                    <ManageRow
+                      icon="person-add-outline"
+                      title="Onboard someone"
+                      detail="Recruit and deploy a pastor, worker or member — sends their invite"
+                      onPress={() =>
+                        router.push("/pastors?onboard=1" as never)
+                      }
+                    />
+                    <View style={styles.rowDivider} />
+                    <ManageRow
+                      icon="git-network-outline"
+                      title="Directorates"
+                      detail="Seat directors, desk heads and members across all ten directorates"
+                      onPress={() =>
+                        router.push("/org?view=directorates" as never)
+                      }
+                    />
                   </SurfaceCard>
                 </>
               ) : null}
