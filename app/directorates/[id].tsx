@@ -245,6 +245,57 @@ export default function DirectorateDetailScreen() {
     (m) => !LEADERSHIP_ORDER.includes(m.office),
   );
 
+  const unitsByBranch = useMemo(() => {
+    const map = new Map<string, ServiceUnitRecord[]>();
+    for (const u of units) {
+      const list = map.get(u.branch.name) ?? [];
+      list.push(u);
+      map.set(u.branch.name, list);
+    }
+    return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  }, [units]);
+
+  function seatRow(office: string, idx: number) {
+    const seat = leadership.find((m) => m.office === office);
+    return (
+      <View key={office} style={[styles.seatRow, idx > 0 && styles.rowDivider]}>
+        <View style={styles.seatBadge}>
+          <Ionicons
+            name={
+              office === "DIRECTOR"
+                ? "medal-outline"
+                : office === "DEPUTY_DIRECTOR"
+                  ? "ribbon-outline"
+                  : "document-text-outline"
+            }
+            size={16}
+            color={seat ? colors.goldText : colors.textMuted}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.seatOffice}>
+            {OFFICE_LABELS.get(office) ?? office}
+          </Text>
+          <Text style={seat ? styles.seatName : styles.seatVacant}>
+            {seat ? seat.user.name : "Vacant"}
+          </Text>
+        </View>
+        {seat && canManageSeats ? (
+          <Pressable
+            accessibilityLabel={`Remove ${seat.user.name}`}
+            onPress={() => confirmRemove(seat.id, seat.user.name)}
+          >
+            <Ionicons
+              name="remove-circle-outline"
+              size={20}
+              color={colors.textMuted}
+            />
+          </Pressable>
+        ) : null}
+      </View>
+    );
+  }
+
   function personPicker(selected: string, onSelect: (pid: string) => void) {
     return (
       <>
@@ -298,71 +349,82 @@ export default function DirectorateDetailScreen() {
           ) : null}
 
           <SectionHeader title="Leadership" />
-          <SurfaceCard>
-            {leadership.length === 0 ? (
-              <Text style={styles.muted}>
-                No officers seated yet.
-              </Text>
-            ) : (
-              leadership.map((m) => (
-                <View key={m.id} style={styles.memberRow}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.memberName}>{m.user.name}</Text>
-                    <Text style={styles.memberMeta}>
-                      {OFFICE_LABELS.get(m.office) ?? m.office}
-                      {m.user.branch ? ` · ${m.user.branch.name}` : ""}
-                    </Text>
-                  </View>
-                  {canManageSeats ? (
-                    <Pressable
-                      accessibilityLabel={`Remove ${m.user.name}`}
-                      onPress={() => confirmRemove(m.id, m.user.name)}
-                    >
-                      <Ionicons
-                        name="remove-circle-outline"
-                        size={20}
-                        color={colors.textMuted}
-                      />
-                    </Pressable>
-                  ) : null}
-                </View>
-              ))
-            )}
+          <SurfaceCard style={styles.flushCard}>
+            {LEADERSHIP_ORDER.map((office, idx) => seatRow(office, idx))}
           </SurfaceCard>
 
-          <SectionHeader title="Desks" />
-          <SurfaceCard>
+          <SectionHeader title="Desks" meta={`${detail.desks.length}`} />
+          <SurfaceCard style={styles.flushCard}>
             {detail.desks.length === 0 ? (
               <Text style={styles.muted}>No desks configured.</Text>
             ) : (
-              detail.desks.map((d) => {
+              detail.desks.map((d, idx) => {
                 const heads = otherMembers.filter((m) => m.deskId === d.id);
+                const head = heads.find((m) => m.office === "DESK_HEAD");
+                const deputies = heads.filter(
+                  (m) => m.office === "DEPUTY_DESK_HEAD",
+                );
                 return (
-                  <View key={d.id} style={styles.deskRow}>
-                    <Text style={styles.memberName}>{d.name}</Text>
-                    <Text style={styles.memberMeta}>
-                      {heads.length
-                        ? heads
-                            .map(
-                              (h) =>
-                                `${h.user.name} (${OFFICE_LABELS.get(h.office) ?? h.office})`,
-                            )
-                            .join(", ")
-                        : "No desk head assigned"}
-                    </Text>
+                  <View
+                    key={d.id}
+                    style={[styles.seatRow, idx > 0 && styles.rowDivider]}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.memberName} numberOfLines={2}>
+                        {d.name}
+                      </Text>
+                      {head || deputies.length ? (
+                        <Text style={styles.memberMeta}>
+                          {[
+                            head ? `${head.user.name} · Head` : null,
+                            ...deputies.map(
+                              (h) => `${h.user.name} · Deputy`,
+                            ),
+                          ]
+                            .filter(Boolean)
+                            .join("  |  ")}
+                        </Text>
+                      ) : null}
+                    </View>
+                    {head ? (
+                      canManageSeats ? (
+                        <Pressable
+                          accessibilityLabel={`Remove ${head.user.name}`}
+                          onPress={() =>
+                            confirmRemove(head.id, head.user.name)
+                          }
+                        >
+                          <Ionicons
+                            name="remove-circle-outline"
+                            size={20}
+                            color={colors.textMuted}
+                          />
+                        </Pressable>
+                      ) : null
+                    ) : (
+                      <View style={styles.vacantPill}>
+                        <Text style={styles.vacantPillText}>Vacant</Text>
+                      </View>
+                    )}
                   </View>
                 );
               })
             )}
           </SurfaceCard>
 
-          <SectionHeader title={`Members (${otherMembers.length})`} />
-          <SurfaceCard>
+          <SectionHeader
+            title="Members"
+            meta={`${otherMembers.length}`}
+          />
+          <SurfaceCard style={styles.flushCard}>
             {otherMembers.length === 0 ? (
               <Text style={styles.muted}>No other members.</Text>
             ) : (
-              otherMembers.map((m) => (
-                <View key={m.id} style={styles.memberRow}>
+              otherMembers.map((m, idx) => (
+                <View
+                  key={m.id}
+                  style={[styles.memberRow, idx > 0 && styles.rowDivider]}
+                >
                   <View style={{ flex: 1 }}>
                     <Text style={styles.memberName}>{m.user.name}</Text>
                     <Text style={styles.memberMeta}>
@@ -391,36 +453,47 @@ export default function DirectorateDetailScreen() {
           {isAdmin || isBranchPastor ? (
             <>
               <SectionHeader
-                title={
-                  isAdmin
-                    ? "Branch units & coordinators"
-                    : "My branch units"
-                }
+                title={isAdmin ? "Branch units" : "My branch units"}
+                meta={`${units.length}`}
               />
-              <SurfaceCard>
-                {units.length === 0 ? (
+              {units.length === 0 ? (
+                <SurfaceCard>
                   <Text style={styles.muted}>
                     No service units for this directorate yet.
                   </Text>
-                ) : (
-                  units.map((u) => (
-                    <View key={u.id} style={styles.memberRow}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.memberName}>{u.unitType.name}</Text>
-                        <Text style={styles.memberMeta}>
-                          {u.branch.name} · Coordinator:{" "}
-                          {u.coordinator?.name ?? "—"}
-                        </Text>
-                      </View>
-                      <Pressable onPress={() => openCoordinator(u)}>
-                        <Text style={styles.assignLink}>
-                          {u.coordinator ? "Change" : "Assign"}
-                        </Text>
-                      </Pressable>
-                    </View>
-                  ))
-                )}
-              </SurfaceCard>
+                </SurfaceCard>
+              ) : (
+                unitsByBranch.map(([branchName, branchUnits]) => (
+                  <View key={branchName} style={styles.branchGroup}>
+                    <Text style={styles.branchLabel}>{branchName}</Text>
+                    <SurfaceCard style={styles.flushCard}>
+                      {branchUnits.map((u, idx) => (
+                        <View
+                          key={u.id}
+                          style={[styles.memberRow, idx > 0 && styles.rowDivider]}
+                        >
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.memberName} numberOfLines={2}>
+                              {u.unitType.name}
+                            </Text>
+                            <Text style={styles.memberMeta}>
+                              {u.coordinator?.name ?? "No coordinator"}
+                            </Text>
+                          </View>
+                          <Pressable
+                            style={styles.unitAction}
+                            onPress={() => openCoordinator(u)}
+                          >
+                            <Text style={styles.assignLink}>
+                              {u.coordinator ? "Change" : "Assign"}
+                            </Text>
+                          </Pressable>
+                        </View>
+                      ))}
+                    </SurfaceCard>
+                  </View>
+                ))
+              )}
             </>
           ) : null}
 
@@ -526,6 +599,68 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   mandate: { ...typography.body, color: colors.textMuted },
+  flushCard: { paddingVertical: spacing.xs },
+  seatRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  rowDivider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  seatBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: radius.md,
+    backgroundColor: colors.navyMuted,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  seatOffice: {
+    fontSize: 10,
+    lineHeight: 13,
+    fontWeight: "700",
+    letterSpacing: 1.1,
+    textTransform: "uppercase",
+    color: colors.textMuted,
+  },
+  seatName: {
+    ...typography.body,
+    fontWeight: "600",
+    color: colors.textPrimary,
+    marginTop: 1,
+  },
+  seatVacant: {
+    ...typography.body,
+    color: colors.textMuted,
+    fontStyle: "italic",
+    marginTop: 1,
+  },
+  vacantPill: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: radius.full,
+    backgroundColor: colors.warningSoft,
+  },
+  vacantPillText: {
+    ...typography.caption,
+    fontWeight: "700",
+    color: colors.warning,
+  },
+  branchGroup: { marginTop: spacing.xs, gap: 2 },
+  branchLabel: {
+    ...typography.caption,
+    fontWeight: "700",
+    color: colors.goldText,
+    marginBottom: 2,
+    marginLeft: 2,
+  },
+  unitAction: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.xs,
+  },
   memberRow: {
     flexDirection: "row",
     alignItems: "center",
