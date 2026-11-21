@@ -225,6 +225,33 @@ export interface PersonnelMoveRecord {
   createdAt: string;
 }
 
+export interface PersonnelCaseRecord {
+  id: string;
+  kind: "WELFARE" | "DISCIPLINE";
+  status: "OPEN" | "RESOLVED" | "CLOSED";
+  subject: { id: string; name: string; role: string } | null;
+  openedBy: { id: string; name: string };
+  title: string;
+  detail: string | null;
+  resolution: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
+}
+
+export interface PersonnelCaseCounts {
+  kind: string;
+  year: number;
+  month: number;
+  opened: number;
+  closed: number;
+  openNow: number;
+}
+
+export interface CaseRegisters {
+  welfare: boolean;
+  discipline: boolean;
+}
+
 export interface ServiceUnitRecord {
   id: string;
   branch: { id: string; name: string };
@@ -692,6 +719,46 @@ export const api = {
 
   listUserMoves: (userId: string) =>
     request<PersonnelMoveRecord[]>(`/users/${userId}/moves`),
+
+  myCaseRegisters: () => request<CaseRegisters>("/cases/my-registers"),
+
+  listCases: (filters: { kind?: string; status?: string }) => {
+    const params = new URLSearchParams();
+    if (filters.kind) params.set("kind", filters.kind);
+    if (filters.status) params.set("status", filters.status);
+    const qs = params.toString();
+    return request<PersonnelCaseRecord[]>(`/cases${qs ? `?${qs}` : ""}`);
+  },
+
+  createCase: (data: {
+    kind: string;
+    subjectId?: string;
+    title: string;
+    detail?: string;
+  }) =>
+    request<PersonnelCaseRecord>("/cases", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  updateCase: (
+    id: string,
+    data: {
+      status?: string;
+      title?: string;
+      detail?: string;
+      resolution?: string | null;
+    },
+  ) =>
+    request<PersonnelCaseRecord>(`/cases/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  caseCounts: (kind: string, year: number, month: number) =>
+    request<PersonnelCaseCounts>(
+      `/cases/counts?kind=${kind}&year=${year}&month=${month}`,
+    ),
 
   getOrgTree: () => request<OrgTreeResponse>("/org/tree"),
   listMyReportTemplates: () =>

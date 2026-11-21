@@ -128,6 +128,10 @@ export default function RootLayout() {
               name="moves"
               options={{ animation: "slide_from_right" }}
             />
+            <Stack.Screen
+              name="cases"
+              options={{ animation: "slide_from_right" }}
+            />
             <Stack.Screen name="unavailable" />
           </Stack>
           <AppAlertHost />

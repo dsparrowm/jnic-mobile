@@ -262,6 +262,13 @@ export function MemberHome({ user }: { user: AuthUser }) {
                         router.push("/org?view=directorates" as never)
                       }
                     />
+                    <View style={styles.rowDivider} />
+                    <ManageRow
+                      icon="shield-checkmark-outline"
+                      title="Case registers"
+                      detail="Welfare and discipline cases — confidential, counts feed your D-reports"
+                      onPress={() => router.push("/cases" as never)}
+                    />
                   </SurfaceCard>
                 </>
               ) : null}
