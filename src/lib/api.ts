@@ -39,9 +39,20 @@ export interface AuthUser {
   stateId: string | null;
   zoneId: string | null;
   branchId: string | null;
+  regionId?: string | null;
+  districtId?: string | null;
   stateName?: string | null;
   zoneName?: string | null;
+  districtName?: string | null;
   branchName?: string | null;
+  regionName?: string | null;
+  directorate?: {
+    directorateId: string;
+    directorateName: string;
+    office: string;
+    deskId: string | null;
+    deskName: string | null;
+  } | null;
   profilePicUrl?: string | null;
 }
 

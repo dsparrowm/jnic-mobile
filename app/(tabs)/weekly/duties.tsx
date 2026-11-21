@@ -13,11 +13,8 @@ import { Field, GhostButton, PrimaryButton } from "@/src/components/ui";
 import { BottomSheet } from "@/src/components/premium/bottom-sheet";
 import { SheetHeader } from "@/src/components/premium/sheet-header";
 import { InlineNotice, ScreenSkeleton } from "@/src/components/premium/states";
-import {
-  PremiumHeader,
-  SectionHeader,
-  SurfaceCard,
-} from "@/src/components/premium/screen";
+import { SectionHeader, SurfaceCard } from "@/src/components/premium/screen";
+import { WeeklyStackBar } from "@/src/components/weekly/stack-bar";
 import { colors, fonts, radius, spacing, typography } from "@/src/theme/tokens";
 
 function periodKeyFor(cadence: MyReportTemplate["cadence"]): string {
@@ -124,8 +121,8 @@ export default function DutiesScreen() {
   if (!user) return null;
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      <PremiumHeader
+    <View style={styles.root}>
+      <WeeklyStackBar
         title="Directorate duties"
         subtitle="Reports for your desk, unit and directorate seats"
       />
@@ -140,9 +137,17 @@ export default function DutiesScreen() {
           <SectionHeader title="Due from me" />
           {templates.length === 0 ? (
             <SurfaceCard>
+              <Text style={styles.emptyTitle}>
+                {user.directorate
+                  ? `You are ${user.directorate.office
+                      .toLowerCase()
+                      .replace(/_/g, " ")} — ${user.directorate.directorateName}`
+                  : "No directorate seat yet"}
+              </Text>
               <Text style={styles.empty}>
-                No report templates match your seats yet. Once you are a unit
-                coordinator, desk head or director, your D1–D6 duties appear here.
+                {user.directorate
+                  ? "This seat has no reports due right now. Unit coordinators file D1/D2, desk heads file D3, and directors file D4–D6."
+                  : "D1–D6 reports appear here once HQ seats you in a directorate — as a unit coordinator, desk head or director. Your territorial (branch/zone/state) reports stay on the Weekly tab."}
               </Text>
             </SurfaceCard>
           ) : (
@@ -290,6 +295,12 @@ const styles = StyleSheet.create({
   scope: { ...typography.caption, color: colors.textMuted },
   dataRow: { ...typography.body, color: colors.textPrimary },
   dataKey: { fontFamily: fonts.medium, textTransform: "capitalize" },
+  emptyTitle: {
+    fontFamily: fonts.semibold,
+    fontSize: typography.title3.fontSize,
+    color: colors.textPrimary,
+    marginBottom: spacing.xs,
+  },
   empty: { ...typography.body, color: colors.textMuted },
   scopePicker: {
     flexDirection: "row",
