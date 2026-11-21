@@ -13,6 +13,8 @@ import {
   RefreshErrorBanner,
 } from "@/src/components/home/home-states";
 import { RecentActivity } from "@/src/components/home/recent-activity";
+import { RegionActionNudge } from "@/src/components/home/region-action-nudge";
+import { RegionStateAttention } from "@/src/components/home/region-state-attention";
 import { ReportNudgeBanner } from "@/src/components/home/report-nudge-banner";
 import { StateActionNudge } from "@/src/components/home/state-action-nudge";
 import { StateZoneAttention } from "@/src/components/home/state-zone-attention";
@@ -25,7 +27,12 @@ import { NotificationBell } from "@/src/components/notifications/notification-be
 import { ExceptionCard } from "@/src/components/weekly/exceptions";
 import { usePastorHome } from "@/src/hooks/use-pastor-home";
 import { api, type AuthUser } from "@/src/lib/api";
-import { canSubmitWeekly, isStatePastor, isZonalPastor } from "@/src/lib/auth";
+import {
+  canSubmitWeekly,
+  isRegionalPastor,
+  isStatePastor,
+  isZonalPastor,
+} from "@/src/lib/auth";
 import { openNotificationTarget } from "@/src/lib/notifications";
 import { useAuth } from "@/src/lib/session";
 import { colors, layout, spacing } from "@/src/theme/tokens";
@@ -49,6 +56,7 @@ export function PastorHome({ user }: { user: AuthUser }) {
   const canSubmit = canSubmitWeekly(user);
   const zonal = isZonalPastor(user);
   const statePastor = isStatePastor(user);
+  const regional = isRegionalPastor(user);
   const branchName = data?.branch?.name ?? user.branchName ?? null;
   const branchLocation = [data?.branch?.zoneName, data?.branch?.stateName]
     .filter(Boolean)
@@ -98,17 +106,22 @@ export function PastorHome({ user }: { user: AuthUser }) {
     [refresh, router],
   );
 
-  const heroSubtitle = statePastor
-    ? (data?.state?.state.name ?? user.stateName ?? null)
-    : zonal
-      ? (data?.zone?.zone.name ?? user.zoneName ?? branchName)
-      : branchName;
+  // Hero names the widest seat held.
+  const heroSubtitle = regional
+    ? (data?.region?.region.name ?? user.regionName ?? null)
+    : statePastor
+      ? (data?.state?.state.name ?? user.stateName ?? null)
+      : zonal
+        ? (data?.zone?.zone.name ?? user.zoneName ?? branchName)
+        : branchName;
 
-  const heroLocation = statePastor
-    ? branchName
-    : zonal
-      ? (user.stateName ?? branchLocation) || null
-      : branchLocation || null;
+  const heroLocation = regional
+    ? (user.stateName ?? branchName)
+    : statePastor
+      ? branchName
+      : zonal
+        ? (user.stateName ?? branchLocation) || null
+        : branchLocation || null;
 
   const branchTrendSubtitle = branchName
     ? `Last six weeks · ${branchName}`
@@ -187,6 +200,33 @@ export function PastorHome({ user }: { user: AuthUser }) {
                 </>
               ) : null}
 
+              {data.region ? (
+                <>
+                  <RegionActionNudge region={data.region} onPress={openReports} />
+                  <ScopeHomeMetrics
+                    section={`This week · ${data.region.region.name}`}
+                    attendance={data.region.totals.attendance}
+                    finance={data.region.totals.finance}
+                  />
+                  <RegionStateAttention
+                    region={data.region}
+                    onPress={openReports}
+                  />
+                  {(data.regionAttendanceTrend ?? []).length > 0 ? (
+                    <AttendanceTrend
+                      points={data.regionAttendanceTrend ?? []}
+                      subtitle={`Last six weeks · ${data.region.region.name}`}
+                    />
+                  ) : null}
+                  {data.regionMonth ? (
+                    <BranchMonthSnapshot
+                      month={data.regionMonth}
+                      unitLabel="branches"
+                    />
+                  ) : null}
+                </>
+              ) : null}
+
               {data.state ? (
                 <>
                   <StateActionNudge state={data.state} onPress={openReports} />
@@ -223,7 +263,7 @@ export function PastorHome({ user }: { user: AuthUser }) {
                 />
               ) : null}
 
-              {data.branch && canSubmit && !data.zone && !data.state ? (
+              {data.branch && canSubmit && !data.zone && !data.state && !data.region ? (
                 <>
                   <BranchHomeMetrics report={data.thisWeek.report} />
                   <AttendanceTrend
