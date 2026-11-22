@@ -139,7 +139,7 @@ export function MemberHome({ user }: { user: AuthUser }) {
   );
 
   const directorate = user.directorate ?? null;
-  const hrPersonnel = user.hrPersonnel === true;
+
   const openDuties = () => router.push("/weekly/duties" as never);
   const openNotifications = () => router.push("/notifications" as never);
 
@@ -235,7 +235,7 @@ export function MemberHome({ user }: { user: AuthUser }) {
                 </>
               ) : null}
 
-              {hrPersonnel ? <HrDeskCard /> : null}
+              <HrDeskCard user={user} />
 
               {data.templates.length > 0 ? (
                 <>
