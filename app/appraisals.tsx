@@ -147,7 +147,7 @@ export default function AppraisalsScreen() {
     <View style={styles.root}>
       <WeeklyStackBar
         title="Appraisals"
-        subtitle="Mid-year and year-end — Records and Appraisal desk"
+        subtitle="Mid-year and year-end reviews"
       />
       {error ? <InlineNotice message={error} /> : null}
       {loading && allowed === null ? (
