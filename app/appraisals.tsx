@@ -10,7 +10,7 @@ import {
   api,
   ApiError,
   type AppraisalCounts,
-  type PastorRecord,
+  type AppraisalSubject,
   type PersonnelAppraisalRecord,
 } from "@/src/lib/api";
 import { Chip, ChipRow, Field, PrimaryButton } from "@/src/components/ui";
@@ -40,7 +40,7 @@ export default function AppraisalsScreen() {
   const [year, setYear] = useState<number>(now.getFullYear());
   const [rows, setRows] = useState<PersonnelAppraisalRecord[]>([]);
   const [counts, setCounts] = useState<AppraisalCounts | null>(null);
-  const [people, setPeople] = useState<PastorRecord[]>([]);
+  const [people, setPeople] = useState<AppraisalSubject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,14 +73,15 @@ export default function AppraisalsScreen() {
       const access = await api.myAppraisalAccess();
       setAllowed(access.appraisals);
       if (!access.appraisals) return;
-      const [list, c, ppl] = await Promise.all([
+      const [listRes, countsRes, subjectsRes] = await Promise.allSettled([
         api.listAppraisals({ period, year }),
         api.appraisalCounts(year, period),
-        api.listPastors({}),
+        api.appraisalSubjects(),
       ]);
-      setRows(list);
-      setCounts(c);
-      setPeople(ppl.items ?? []);
+      if (listRes.status === "rejected") throw listRes.reason;
+      setRows(listRes.value);
+      if (countsRes.status === "fulfilled") setCounts(countsRes.value);
+      if (subjectsRes.status === "fulfilled") setPeople(subjectsRes.value);
     } catch (err) {
       setError(
         err instanceof ApiError ? err.message : "Failed to load appraisals",

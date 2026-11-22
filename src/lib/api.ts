@@ -121,6 +121,13 @@ export interface PastorListSummary {
   deactivated: number;
 }
 
+export interface AppraisalSubject {
+  id: string;
+  name: string;
+  role: Role;
+  title: string | null;
+}
+
 export interface PastorListResponse {
   items: PastorRecord[];
   total: number;
@@ -839,6 +846,9 @@ export const api = {
     request<AppraisalCounts>(
       `/appraisals/counts?year=${year}${period ? `&period=${period}` : ""}`,
     ),
+
+  appraisalSubjects: () =>
+    request<AppraisalSubject[]>("/appraisals/subjects"),
 
   getOrgTree: () => request<OrgTreeResponse>("/org/tree"),
   listMyReportTemplates: () =>
