@@ -86,11 +86,38 @@ export default function OrgScreen() {
   const [branchStateId, setBranchStateId] = useState("");
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [moveState, setMoveState] = useState<OrgState | null>(null);
+  const [moveRegionId, setMoveRegionId] = useState("");
 
   const allStates = useMemo(
     () => [...tree.unassignedStates, ...tree.regions.flatMap((r) => r.states)],
     [tree],
   );
+
+  function currentRegionOf(stateId: string) {
+    return (
+      tree.regions.find((r) => r.states.some((s) => s.id === stateId))?.id ?? ""
+    );
+  }
+
+  async function saveStateMove() {
+    if (!moveState) return;
+    setBusy(true);
+    setFormError(null);
+    try {
+      await api.updateState(moveState.id, {
+        regionId: moveRegionId || null,
+      });
+      setMoveState(null);
+      await load();
+    } catch (err) {
+      setFormError(
+        err instanceof ApiError ? err.message : "Could not move state",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
 
   const zonesForBranch = useMemo(
     () => allStates.find((s) => s.id === branchStateId)?.zones ?? [],
@@ -259,6 +286,21 @@ export default function OrgScreen() {
           <Text style={styles.count}>
             {plural(state.zones.length, "zone")} · {plural(branchCount, "branch")}
           </Text>
+          <Pressable
+            accessibilityLabel={`Move ${state.name} to a region`}
+            onPress={() => {
+              setMoveState(state);
+              setMoveRegionId(currentRegionOf(state.id));
+            }}
+            hitSlop={8}
+            style={{ padding: spacing.xs }}
+          >
+            <Ionicons
+              name="swap-horizontal-outline"
+              size={16}
+              color={colors.goldText}
+            />
+          </Pressable>
         </Pressable>
         {open ? (
           <>
@@ -523,6 +565,39 @@ export default function OrgScreen() {
           {tree.unassignedStates.map(renderState)}
         </ScrollView>
       )}
+
+      <BottomSheet
+        visible={moveState !== null}
+        onClose={() => (busy ? null : setMoveState(null))}
+      >
+        <SheetHeader
+          title={moveState ? `Move ${moveState.name}` : "Move state"}
+          subtitle="Pick the region this state belongs to"
+          onClose={() => (busy ? null : setMoveState(null))}
+          closeDisabled={busy}
+        />
+        <ChipRow>
+          <Chip
+            label="No region"
+            active={!moveRegionId}
+            onPress={() => setMoveRegionId("")}
+          />
+          {tree.regions.map((r) => (
+            <Chip
+              key={r.id}
+              label={r.name}
+              active={moveRegionId === r.id}
+              onPress={() => setMoveRegionId(r.id)}
+            />
+          ))}
+        </ChipRow>
+        {formError ? <InlineNotice message={formError} /> : null}
+        <PrimaryButton
+          label="Save"
+          loading={busy}
+          onPress={() => void saveStateMove()}
+        />
+      </BottomSheet>
 
       <BottomSheet
         visible={createKind !== null}
