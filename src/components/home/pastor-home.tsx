@@ -6,6 +6,7 @@ import type { NotificationRecord } from "@repo/types";
 import { AttendanceTrend } from "@/src/components/home/attendance-trend";
 import { BranchHomeMetrics } from "@/src/components/home/branch-home-metrics";
 import { BranchMonthSnapshot } from "@/src/components/home/branch-month-snapshot";
+import { DirectorateCard } from "@/src/components/home/directorate-card";
 import { HomeHero } from "@/src/components/home/home-hero";
 import { HrDeskCard } from "@/src/components/home/hr-desk";
 import {
@@ -276,6 +277,8 @@ export function PastorHome({ user }: { user: AuthUser }) {
                   ) : null}
                 </>
               ) : null}
+
+              <DirectorateCard user={user} />
 
               {user.hrPersonnel ? <HrDeskCard /> : null}
 
