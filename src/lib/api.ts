@@ -933,6 +933,12 @@ export const api = {
       body: JSON.stringify(data),
     }),
 
+  updateState: (id: string, data: { regionId?: string | null }) =>
+    request<OrgState>(`/org/states/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
   createDistrict: (data: { name: string; zoneId: string }) =>
     request<OrgDistrict>("/org/districts", {
       method: "POST",
