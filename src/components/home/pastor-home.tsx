@@ -7,6 +7,7 @@ import { AttendanceTrend } from "@/src/components/home/attendance-trend";
 import { BranchHomeMetrics } from "@/src/components/home/branch-home-metrics";
 import { BranchMonthSnapshot } from "@/src/components/home/branch-month-snapshot";
 import { HomeHero } from "@/src/components/home/home-hero";
+import { HrDeskCard } from "@/src/components/home/hr-desk";
 import {
   HomeErrorState,
   HomeSkeleton,
@@ -275,6 +276,8 @@ export function PastorHome({ user }: { user: AuthUser }) {
                   ) : null}
                 </>
               ) : null}
+
+              {user.hrPersonnel ? <HrDeskCard /> : null}
 
               <RecentActivity
                 items={data.recentActivity.items}

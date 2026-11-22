@@ -19,6 +19,7 @@ import {
 import type { NotificationRecord } from "@repo/types";
 import { openNotificationTarget } from "@/src/lib/notifications";
 import { HomeHero } from "@/src/components/home/home-hero";
+import { HrDeskCard } from "@/src/components/home/hr-desk";
 import { HomeSkeleton } from "@/src/components/home/home-states";
 import { RecentActivity } from "@/src/components/home/recent-activity";
 import { NotificationBell } from "@/src/components/notifications/notification-bell";
@@ -234,51 +235,7 @@ export function MemberHome({ user }: { user: AuthUser }) {
                 </>
               ) : null}
 
-              {hrPersonnel ? (
-                <>
-                  <SectionHeader title="HR desk" />
-                  <SurfaceCard style={styles.manageCard}>
-                    <ManageRow
-                      icon="people-outline"
-                      title="People"
-                      detail="Roster of pastors, workers and unit leaders — reassign, deactivate"
-                      onPress={() => router.push("/pastors" as never)}
-                    />
-                    <View style={styles.rowDivider} />
-                    <ManageRow
-                      icon="person-add-outline"
-                      title="Onboard someone"
-                      detail="Recruit and deploy a pastor, worker or member — sends their invite"
-                      onPress={() =>
-                        router.push("/pastors?onboard=1" as never)
-                      }
-                    />
-                    <View style={styles.rowDivider} />
-                    <ManageRow
-                      icon="git-network-outline"
-                      title="Directorates"
-                      detail="Seat directors, desk heads and members across all ten directorates"
-                      onPress={() =>
-                        router.push("/org?view=directorates" as never)
-                      }
-                    />
-                    <View style={styles.rowDivider} />
-                    <ManageRow
-                      icon="shield-checkmark-outline"
-                      title="Case registers"
-                      detail="Welfare and discipline cases — confidential, counts feed your D-reports"
-                      onPress={() => router.push("/cases" as never)}
-                    />
-                    <View style={styles.rowDivider} />
-                    <ManageRow
-                      icon="star-half-outline"
-                      title="Appraisals"
-                      detail="Mid-year and year-end records for pastors and workers"
-                      onPress={() => router.push("/appraisals" as never)}
-                    />
-                  </SurfaceCard>
-                </>
-              ) : null}
+              {hrPersonnel ? <HrDeskCard /> : null}
 
               {data.templates.length > 0 ? (
                 <>
