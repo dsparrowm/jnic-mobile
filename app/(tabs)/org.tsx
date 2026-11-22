@@ -639,7 +639,7 @@ export default function OrgScreen() {
               ))}
             </ChipRow>
             <Text style={styles.label}>Nigerian state</Text>
-            <ScrollView style={{ maxHeight: 280 }}>
+            <View style={styles.statePicker}>
               {NIGERIAN_STATES.map((name) => (
                 <Pressable
                   key={name}
@@ -656,7 +656,7 @@ export default function OrgScreen() {
                   </Text>
                 </Pressable>
               ))}
-            </ScrollView>
+            </View>
           </>
         ) : null}
 
@@ -991,6 +991,9 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: spacing.sm,
     marginBottom: spacing.sm,
+  },
+  statePicker: {
+    marginTop: spacing.xs,
   },
   option: {
     paddingVertical: 12,
