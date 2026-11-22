@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
+import type { AuthUser } from "@/src/lib/api";
 import { SectionHeader, SurfaceCard } from "@/src/components/premium/screen";
 import { colors, fonts, radius, spacing, typography } from "@/src/theme/tokens";
 
@@ -31,46 +32,83 @@ function ManageRow({
   );
 }
 
-export function HrDeskCard() {
+type Row = {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  detail: string;
+  href: string;
+};
+
+const PERSONNEL_ROWS: Row[] = [
+  {
+    icon: "people-outline",
+    title: "People",
+    detail:
+      "Roster of pastors, workers and unit leaders — reassign, deactivate",
+    href: "/pastors",
+  },
+  {
+    icon: "person-add-outline",
+    title: "Onboard someone",
+    detail:
+      "Recruit and deploy a pastor, worker or member — sends their invite",
+    href: "/pastors?onboard=1",
+  },
+  {
+    icon: "git-network-outline",
+    title: "Directorates",
+    detail:
+      "Seat directors, desk heads and members across all ten directorates",
+    href: "/org?view=directorates",
+  },
+];
+
+const CASES_ROW: Row = {
+  icon: "shield-checkmark-outline",
+  title: "Case registers",
+  detail:
+    "Welfare and discipline cases — confidential, counts feed your D-reports",
+  href: "/cases",
+};
+
+const APPRAISALS_ROW: Row = {
+  icon: "star-half-outline",
+  title: "Appraisals",
+  detail: "Mid-year and year-end records for pastors and workers",
+  href: "/appraisals",
+};
+
+/** HR desk card — rows keyed by the caller's desk, not just leadership. */
+export function HrDeskCard({ user }: { user: AuthUser }) {
   const router = useRouter();
+  const access = user.hrAccess ?? {
+    personnel: user.hrPersonnel === true,
+    welfare: user.hrPersonnel === true,
+    discipline: user.hrPersonnel === true,
+    appraisals: user.hrPersonnel === true,
+  };
+  const rows: Row[] = [
+    ...(access.personnel ? PERSONNEL_ROWS : []),
+    ...(access.welfare || access.discipline ? [CASES_ROW] : []),
+    ...(access.appraisals ? [APPRAISALS_ROW] : []),
+  ];
+  if (rows.length === 0) return null;
+
   return (
     <>
       <SectionHeader title="HR desk" />
       <SurfaceCard style={styles.manageCard}>
-        <ManageRow
-          icon="people-outline"
-          title="People"
-          detail="Roster of pastors, workers and unit leaders — reassign, deactivate"
-          onPress={() => router.push("/pastors" as never)}
-        />
-        <View style={styles.rowDivider} />
-        <ManageRow
-          icon="person-add-outline"
-          title="Onboard someone"
-          detail="Recruit and deploy a pastor, worker or member — sends their invite"
-          onPress={() => router.push("/pastors?onboard=1" as never)}
-        />
-        <View style={styles.rowDivider} />
-        <ManageRow
-          icon="git-network-outline"
-          title="Directorates"
-          detail="Seat directors, desk heads and members across all ten directorates"
-          onPress={() => router.push("/org?view=directorates" as never)}
-        />
-        <View style={styles.rowDivider} />
-        <ManageRow
-          icon="shield-checkmark-outline"
-          title="Case registers"
-          detail="Welfare and discipline cases — confidential, counts feed your D-reports"
-          onPress={() => router.push("/cases" as never)}
-        />
-        <View style={styles.rowDivider} />
-        <ManageRow
-          icon="star-half-outline"
-          title="Appraisals"
-          detail="Mid-year and year-end records for pastors and workers"
-          onPress={() => router.push("/appraisals" as never)}
-        />
+        {rows.map((row, idx) => (
+          <View key={row.href}>
+            {idx > 0 ? <View style={styles.rowDivider} /> : null}
+            <ManageRow
+              icon={row.icon}
+              title={row.title}
+              detail={row.detail}
+              onPress={() => router.push(row.href as never)}
+            />
+          </View>
+        ))}
       </SurfaceCard>
     </>
   );

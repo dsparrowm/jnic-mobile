@@ -280,7 +280,7 @@ export function PastorHome({ user }: { user: AuthUser }) {
 
               <DirectorateCard user={user} />
 
-              {user.hrPersonnel ? <HrDeskCard /> : null}
+              <HrDeskCard user={user} />
 
               <RecentActivity
                 items={data.recentActivity.items}

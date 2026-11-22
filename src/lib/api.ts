@@ -54,6 +54,12 @@ export interface AuthUser {
     deskId: string | null;
     deskName: string | null;
   } | null;
+  hrAccess?: {
+    personnel: boolean;
+    welfare: boolean;
+    discipline: boolean;
+    appraisals: boolean;
+  } | null;
   profilePicUrl?: string | null;
 }
 
